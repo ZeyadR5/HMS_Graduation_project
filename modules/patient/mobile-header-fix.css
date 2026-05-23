@@ -1,0 +1,74 @@
+@media (max-width: 767.98px) {
+  nav.bg-blue-700 > div.mx-auto.max-w-7xl > div.flex.h-16.items-center.justify-between {
+    min-height: 4.5rem !important;
+    height: auto !important;
+    align-items: center !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  nav.bg-blue-700 .hidden.md\\:block {
+    display: none !important;
+  }
+
+  nav.bg-blue-700 .-mr-2.flex.md\\:hidden {
+    display: flex !important;
+    margin-right: 0 !important;
+    margin-left: auto !important;
+  }
+
+  nav.bg-blue-700 .flex-shrink-0 img {
+    width: 4rem !important;
+    height: 4rem !important;
+    object-fit: contain !important;
+  }
+
+  nav.bg-blue-700 #user-menu-btn {
+    padding: 0.6rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  nav.bg-blue-700 #mobile-menu {
+    padding: 0.25rem 0 0.75rem !important;
+  }
+
+  nav.bg-blue-700 #mobile-menu .space-y-1 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  nav.bg-blue-700 #mobile-menu .space-y-1 > a,
+  nav.bg-blue-700 #mobile-menu .mt-3.space-y-1 > a {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.9rem 1rem !important;
+    border-radius: 0.85rem !important;
+    text-align: left !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  nav.bg-blue-700 #mobile-menu .border-t {
+    margin-top: 0.5rem !important;
+    padding-top: 0.75rem !important;
+  }
+
+  nav.bg-blue-700 #mobile-menu .flex.items-center.px-5 {
+    justify-content: flex-end !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  nav.bg-blue-700 #mobile-menu .mt-3.space-y-1 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+    margin-top: 0.5rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+}

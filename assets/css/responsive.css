@@ -1,0 +1,130 @@
+
+/* Global responsive improvements without changing app logic */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img, svg, canvas, video, iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+main, section, .container, .card, .panel, .table-responsive, .table-wrapper {
+  max-width: 100%;
+}
+
+/* Enhanced Table Responsiveness */
+.table-responsive, 
+.table-wrapper,
+[class*="overflow-x-auto"] {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.table-responsive::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar,
+[class*="overflow-x-auto"]::-webkit-scrollbar {
+  height: 5px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb,
+[class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+@media (max-width: 767px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Padding Adjustments */
+  .mx-auto.max-w-7xl,
+  .mx-auto.max-w-2xl,
+  .mx-auto.max-w-6xl,
+  .mx-auto.max-w-5xl {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Typography Scaling */
+  h1 { font-size: 1.5rem !important; line-height: 2rem !important; }
+  h2 { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+  h3 { font-size: 1.125rem !important; line-height: 1.5rem !important; }
+  
+  .text-3xl { font-size: 1.5rem !important; line-height: 2rem !important; }
+  .text-4xl { font-size: 1.75rem !important; line-height: 2.25rem !important; }
+
+  /* Grid Fixes */
+  .grid {
+    gap: 1rem !important;
+  }
+
+  /* Border Radius for Mobile */
+  .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl {
+    border-radius: 1rem !important;
+  }
+
+  /* Mobile Stacking Utilities */
+  .mobile-stack,
+  .flex.mobile-stack,
+  .mobile-stack.flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Form Elements */
+  input, select, textarea, button {
+    font-size: 16px !important; /* Prevents iOS zoom */
+    max-width: 100%;
+  }
+
+  /* Table Cell Adjustments */
+  table thead th,
+  table tbody td {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    white-space: nowrap;
+  }
+
+  /* Custom HMS Badge & Link scaling */
+  .inline-flex.items-center.rounded-full {
+    padding-top: 0.15rem !important;
+    padding-bottom: 0.15rem !important;
+    font-size: 0.65rem !important;
+  }
+
+  .hms-med-nav-link, 
+  .hms-action-link {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Hide subtitle on small screens to save space */
+  .hms-med-brand-subtitle {
+    display: none !important;
+  }
+}
+
+/* Tablet Adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  
+  .xl\:grid-cols-\[1\.65fr_1fr\] {
+    grid-template-columns: 1fr !important;
+  }
+}
