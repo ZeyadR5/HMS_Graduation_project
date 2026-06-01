@@ -1107,5 +1107,53 @@ if (!defined('HMS_NAV_ASSETS')) {
             }
         });
     </script>
+
+    <!-- Global Page Loader -->
+    <link rel="stylesheet" href="/assets/css/loader.css">
+    <div id="global-loader" class="hidden">
+      <div class="loadingspinner">
+        <div id="square1"></div>
+        <div id="square2"></div>
+        <div id="square3"></div>
+        <div id="square4"></div>
+        <div id="square5"></div>
+      </div>
+    </div>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const loader = document.getElementById('global-loader');
+        
+        // Intercept link clicks
+        document.querySelectorAll('a').forEach(anchor => {
+          anchor.addEventListener('click', function(e) {
+            if (this.target === '_blank' || 
+                this.hasAttribute('download') || 
+                this.href.startsWith('javascript:') || 
+                this.href.includes('#') ||
+                this.getAttribute('onclick')) return;
+            
+            if (this.href && this.href !== window.location.href) {
+                loader.classList.remove('hidden');
+            }
+          });
+        });
+
+        // Intercept form submissions
+        document.querySelectorAll('form').forEach(form => {
+          form.addEventListener('submit', function(e) {
+            if (this.target === '_blank') return;
+            // if form is valid (if there's HTML5 validation)
+            if (this.checkValidity()) {
+                loader.classList.remove('hidden');
+            }
+          });
+        });
+
+        // Hide loader if page is shown from back/forward cache
+        window.addEventListener('pageshow', function(e) {
+          loader.classList.add('hidden');
+        });
+      });
+    </script>
 <?php endif; ?>
-<?php require_once __DIR__ . '/global-loader.php'; ?>
