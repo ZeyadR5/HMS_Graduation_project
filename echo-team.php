@@ -61,13 +61,13 @@ session_start();
 
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
         <div class="text-center mb-20 relative">
-            <h2 class="text-lg font-bold tracking-widest uppercase text-indigo-500 mb-2">تعرف علينا</h2>
+            <h2 class="text-lg font-bold tracking-widest uppercase text-indigo-500 mb-2">Get to Know Us</h2>
             <p class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">
-                فريق <span class="gradient-text">ايكو تيم</span> (Echo Team)
+                <span class="gradient-text">Echo Team</span>
             </p>
             <div class="h-1 w-24 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mx-auto rounded-full"></div>
             <p class="mt-8 max-w-2xl text-xl text-slate-600 mx-auto leading-relaxed">
-                نخبة من المطورين والمصممين اجتمعوا لبناء نظام طبي متكامل يجمع بين قوة الأداء، أمان البيانات، وروعة التصميم.
+                An elite group of developers and designers coming together to build an integrated medical system that combines high performance, data security, and stunning design.
             </p>
         </div>
 
@@ -78,42 +78,42 @@ session_start();
                 [
                     'name' => 'Zeyad Yasser',
                     'role' => 'Full Stack & Team Leader',
-                    'desc' => 'قائد الفريق ومطور الواجهات الأمامية والخلفية، مهندس معمارية النظام والمشرف العام.',
+                    'desc' => 'Team leader, full stack developer, system architect, and general supervisor.',
                     'color' => 'indigo',
                     'icon' => 'bi-person-badge-fill'
                 ],
                 [
                     'name' => 'AbdEl-Rahman Gamal',
                     'role' => 'Back-End Developer & DB',
-                    'desc' => 'خبير تطوير قواعد البيانات والواجهات الخلفية لضمان كفاءة معالجة البيانات.',
+                    'desc' => 'Database and backend development expert, ensuring efficient data processing.',
                     'color' => 'emerald',
                     'icon' => 'bi-database-fill-gear'
                 ],
                 [
                     'name' => 'Amnaa Mohamed',
                     'role' => 'Back-End Developer & DB',
-                    'desc' => 'مطور خلفي وقواعد بيانات، متخصصة في تأمين وربط الأنظمة وتصميم قواعد البيانات.',
+                    'desc' => 'Backend and database developer, specializing in securing systems and database design.',
                     'color' => 'teal',
                     'icon' => 'bi-server'
                 ],
                 [
                     'name' => 'Nada Taha',
                     'role' => 'Front-End Developer',
-                    'desc' => 'مطور واجهات أمامية، تعمل على تحويل التصميمات إلى تجارب مستخدم تفاعلية وجذابة.',
+                    'desc' => 'Frontend developer, working on transforming designs into interactive user experiences.',
                     'color' => 'rose',
                     'icon' => 'bi-window-sidebar'
                 ],
                 [
                     'name' => 'Aya Shapan',
                     'role' => 'Front-End Developer',
-                    'desc' => 'مطور واجهات أمامية، مهتمة بأدق تفاصيل التصميم وبناء مكونات سريعة الاستجابة.',
+                    'desc' => 'Frontend developer, attentive to UI details and building responsive components.',
                     'color' => 'pink',
                     'icon' => 'bi-palette-fill'
                 ],
                 [
                     'name' => 'Mohamed Ahmed',
                     'role' => 'Front-End & Documentation',
-                    'desc' => 'مطور واجهات أمامية ومسؤول التوثيق، يضمن تكامل الكود ووضوح أدلة الاستخدام.',
+                    'desc' => 'Frontend developer and documentation lead, ensuring code integration and clear user guides.',
                     'color' => 'blue',
                     'icon' => 'bi-file-earmark-code-fill'
                 ]
@@ -148,8 +148,8 @@ session_start();
     <?php if (!isset($_SESSION['role'])): ?>
     <footer style="margin-top: auto; padding: 1.5rem; text-align: center; background-color: #1e293b; color: #cbd5e1; font-size: 0.9rem; font-family: 'Tajawal', sans-serif;">
         <p style="margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500;">
-            جميع الحقوق محفوظة &copy; <?= date('Y') ?> 
-            <span style="color: #818cf8; font-weight: 800;">فريق ايكو تيم (Echo Team)</span>
+            All rights reserved &copy; <?= date('Y') ?> 
+            <span style="color: #818cf8; font-weight: 800;">Echo Team</span>
             <i class="bi bi-suit-heart-fill text-rose-500"></i>
         </p>
     </footer>

@@ -871,6 +871,21 @@ if (pass2) {
 </script>
 
 <script src="/assets/js/responsive-nav.js" defer></script>
+
+<footer style="position: absolute; bottom: 0; left: 0; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.05); color: #94a3b8; font-size: 0.85rem; font-family: 'Tajawal', sans-serif; width: 100%; z-index: 40; box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.05);">
+    <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; max-width: 1280px; flex-wrap: wrap; gap: 10px;">
+        <p style="margin: 0; font-weight: 600; display: flex; align-items: center; gap: 6px; letter-spacing: 0.5px;">
+            &copy; <?= date('Y') ?> <span style="color: #e2e8f0;">Hospital Management System</span>
+        </p>
+        <p style="margin: 0; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+            صُنع بكل <i class="bi bi-suit-heart-fill text-rose-500" style="color: #f43f5e; animation: pulse 2s infinite;"></i> بواسطة
+            <a href="/echo-team.php" style="color: #818cf8; font-weight: 800; text-decoration: none; padding: 4px 12px; border-radius: 99px; background: rgba(129, 140, 248, 0.15); transition: all 0.3s ease; border: 1px solid rgba(129,140,248,0.2);" onmouseover="this.style.background='rgba(129, 140, 248, 0.25)'; this.style.color='#a5b4fc'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='rgba(129, 140, 248, 0.15)'; this.style.color='#818cf8'; this.style.transform='translateY(0)';">
+                فريق ايكو تيم (Echo Team)
+            </a>
+        </p>
+    </div>
+</footer>
+
 </body>
 </html>
 
