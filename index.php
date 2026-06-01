@@ -329,16 +329,15 @@ body {
   font-family: 'DM Sans', sans-serif;
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
   background: #dde8f5;
   background: radial-gradient(ellipse at 20% 80%, #c5d8f0 0%, #dde8f5 50%, #e8eef7 100%);
-  padding: 0;
+  padding: 20px;
 }
 
 /* ── WRAPPER ── */
 .wrapper {
-  margin: auto;
   position: relative;
   width: 960px;
   max-width: 100%;
@@ -872,15 +871,6 @@ if (pass2) {
 </script>
 
 <script src="/assets/js/responsive-nav.js" defer></script>
-
-<footer style="width: 100%; background-color: #263e5b; color: #f8fafc; text-align: center; padding: 1.5rem 1rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.3px; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1);">
-    <div style="margin-bottom: 0.6rem;">
-        Copyright &copy; <?= date('Y') ?> &mdash; Zeyad Yasser, IT Manager @ Gamma Scan Center
-    </div>
-    <div style="font-size: 0.85rem; color: #cbd5e1;">
-        WhatsApp: <a href="https://wa.me/201024474059" style="color: #60a5fa; text-decoration: none; font-weight: 600; transition: color 0.2s;" onmouseover="this.style.color='#93c5fd'" onmouseout="this.style.color='#60a5fa'" target="_blank">wa.me/201024474059</a>
-    </div>
-</footer>
 
 </body>
 </html>
