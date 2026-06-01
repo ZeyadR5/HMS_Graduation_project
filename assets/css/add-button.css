@@ -1,0 +1,66 @@
+/* Animated Add Button — From Uiverse.io by andrew-demchenk0 */
+.hms-add-btn {
+    position: relative;
+    width: 150px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border: 1px solid #34974d;
+    background-color: #3aa856;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.hms-add-btn,
+.hms-add-btn .hms-add-btn__icon,
+.hms-add-btn .hms-add-btn__text {
+    transition: all 0.3s;
+}
+
+.hms-add-btn .hms-add-btn__text {
+    transform: translateX(22px);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.hms-add-btn .hms-add-btn__icon {
+    position: absolute;
+    transform: translateX(109px);
+    height: 100%;
+    width: 39px;
+    background-color: #34974d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 7px 7px 0;
+}
+
+.hms-add-btn .hms-add-btn__icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: #fff;
+}
+
+.hms-add-btn:hover {
+    background: #34974d;
+}
+
+.hms-add-btn:hover .hms-add-btn__text {
+    color: transparent;
+}
+
+.hms-add-btn:hover .hms-add-btn__icon {
+    width: 148px;
+    transform: translateX(0);
+    border-radius: 7px;
+}
+
+.hms-add-btn:active .hms-add-btn__icon {
+    background-color: #2e8644;
+}
+
+.hms-add-btn:active {
+    border: 1px solid #2e8644;
+}
