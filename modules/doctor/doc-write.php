@@ -77,7 +77,7 @@ if (isset($_POST['submit'])) {
       if ($query) {
         $connect->query("UPDATE appointment SET patient_status = 'done' WHERE apid = '$apid'");
         echo "<script>alert('Report Updated successfully');
-        window.location.href = '/includes/patient-profile.php?ref=' + encodeURIComponent('<?= hms_encrypt_id((int)$redirectUid) ?>');
+        window.location.href = '/includes/patient-profile.php?ref=' + encodeURIComponent('" . hms_encrypt_id((int)$redirectUid) . "');
         </script>";
         exit();
       } else {
@@ -94,7 +94,7 @@ if (isset($_POST['submit'])) {
 
       if ($query) {
         echo "<script>alert('Report Saved successfully');
-        window.location.href = '/includes/patient-profile.php?ref=' + encodeURIComponent('<?= hms_encrypt_id((int)$redirectUid) ?>');
+        window.location.href = '/includes/patient-profile.php?ref=' + encodeURIComponent('" . hms_encrypt_id((int)$redirectUid) . "');
         </script>";
         exit();
       } else {
