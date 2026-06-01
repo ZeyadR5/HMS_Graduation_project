@@ -90,6 +90,7 @@ $patientName = $_SESSION['username'] ?? 'المريض';
 
             <!-- Quick Actions -->
             <div class="px-6 py-3 flex gap-2 overflow-x-auto no-scrollbar border-t border-slate-50">
+                <button onclick="sendQuick('عندي ألم ومحتاج أعرف أروح لأي تخصص')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-slate-600 hover:border-primary hover:text-primary transition-all shadow-sm">🩺 توجيه بالأعراض</button>
                 <button onclick="sendQuick('ما هي مواعيدي القادمة؟')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-slate-600 hover:border-primary hover:text-primary transition-all shadow-sm">📅 مواعيدي</button>
                 <button onclick="sendQuick('متى متاح دكتور حمادة؟')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-slate-600 hover:border-primary hover:text-primary transition-all shadow-sm">👨‍⚕️ مواعيد الأطباء</button>
                 <button onclick="sendQuick('تحضيرات تحليل السكر')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-slate-600 hover:border-primary hover:text-primary transition-all shadow-sm">🔬 تحضيرات التحاليل</button>
@@ -101,7 +102,7 @@ $patientName = $_SESSION['username'] ?? 'المريض';
                     <textarea 
                         id="chatInput"
                         rows="1"
-                        placeholder="اسألني عن المواعيد، التحاليل، أو تعليمات الطبيب..."
+                        placeholder="اوصفلي الأعراض اللي عندك وهوجهك للتخصص المناسب..."
                         class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-3 resize-none max-h-32"
                     ></textarea>
                     <button 

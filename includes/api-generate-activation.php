@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 
 $role = $_SESSION['role'] ?? '';
 // Only allow non-patients to generate activation codes
-if (!in_array($role, ['Admin', 'System Admin', 'User', 'Doctor'])) {
+if (!in_array($role, ['Admin', 'System Admin', 'User'])) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
     exit();
 }

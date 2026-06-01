@@ -35,30 +35,26 @@ if (!$input || empty($input['message'])) {
 $userMessage = trim($input['message']);
 $chatHistory = $input['history'] ?? [];
 
-// ── Diagnostic question filter ───────────────────────────────────────────────
-$diagnosticPatterns = [
-    'عندي ألم', 'عندي وجع', 'أحس بألم', 'احس بألم', 'إيه التشخيص', 'ايه التشخيص',
-    'إيه المرض', 'ايه المرض', 'هل عندي', 'هل أنا مريض', 'هل انا مريض', 'سبب الألم',
-    'سبب الوجع', 'سبب الصداع', 'أعراض', 'اعراض', 'تشخيص', 'علاج', 'دواء', 'أدوية',
-    'ادوية', 'محتاج عملية', 'عملية جراحية', 'هل احتاج', 'هل أحتاج', 'حالتي خطيرة',
-    'نتيجة التحليل', 'تفسير التحليل', 'قراءة التحليل', 'وصفة طبية', 'روشتة',
-    'diagnos', 'symptom', 'treatment plan', 'prescri', 'what disease', 'what illness',
-    'do i have', 'am i sick', 'is it serious', 'what medicine', 'what drug',
-    'need surgery', 'chest pain', 'heart attack', 'i feel pain', 'i have pain',
+// ── Dangerous medical request filter ─────────────────────────────────────────
+// Only block actual prescription/diagnosis requests, NOT symptom descriptions
+$blockedPatterns = [
+    'وصفة طبية', 'روشتة', 'اكتبلي دواء', 'اكتبلي علاج',
+    'prescri', 'write me a prescription', 'what drug should i take',
+    'what medicine should i take',
 ];
 
 $lowerMessage = mb_strtolower($userMessage);
-$isDiagnostic = false;
-foreach ($diagnosticPatterns as $pattern) {
+$isBlocked = false;
+foreach ($blockedPatterns as $pattern) {
     if (mb_strpos($lowerMessage, mb_strtolower($pattern)) !== false) {
-        $isDiagnostic = true;
+        $isBlocked = true;
         break;
     }
 }
 
-if ($isDiagnostic) {
+if ($isBlocked) {
     echo json_encode([
-        'reply' => "⚠️ عذراً، لا أستطيع تقديم استشارات طبية أو تشخيصية.\n\n🏥 يجب مراجعة الطبيب المختص أو التوجه لقسم الطوارئ.\n\n📞 في حالة الطوارئ اتصل على: 123",
+        'reply' => "⚠️ عذراً، لا أستطيع كتابة وصفات طبية أو تحديد أدوية.\n\n🏥 يجب مراجعة الطبيب المختص لذلك.\n\nلكن يمكنني مساعدتك في تحديد التخصص المناسب لحالتك! فقط اوصفلي الأعراض اللي عندك.",
         'type' => 'diagnostic_blocked'
     ], JSON_UNESCAPED_UNICODE);
     exit();
@@ -129,6 +125,13 @@ $stmtH->bind_param("i", $sessionUid);
 $stmtH->execute();
 if ($hRes = $stmtH->get_result()->fetch_assoc()) { $latestHistory = $hRes; }
 
+// 4. Available Specializations from database
+$specializations = [];
+$specResult = $connect->query("SELECT specilization FROM doctorspecilization ORDER BY id");
+while ($specRow = $specResult->fetch_assoc()) {
+    $specializations[] = $specRow['specilization'];
+}
+
 $connect->close();
 
 $apiKey = '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';
@@ -161,6 +164,13 @@ foreach ($doctors as $doc) {
     }
 }
 
+// ── Format Specializations Context ──────────────────────────────────────────
+$specContext = "\n\nالتخصصات الطبية المتاحة في المستشفى:\n";
+foreach ($specializations as $spec) {
+    $specContext .= "- {$spec}\n";
+}
+$specContext .= "\nرابط حجز موعد جديد: /modules/patient/New-reservation.php\n";
+
 // ── AI Prompt ───────────────────────────────────────────────────────────────
 $systemPrompt = <<<PROMPT
 أنت "Echo Assistant" — مساعد دعم المرضى الذكي في نظام Echo HMS.
@@ -175,11 +185,38 @@ $systemPrompt = <<<PROMPT
    - ممنوع منعاً باتاً اقتراح أي موعد "في الماضي" (أي وقت سبق الوقت الحالي إذا كان الموعد اليوم).
    - إذا كان الوقت الحالي (مثلاً 9:55 مساءً) ونهاية عمل الطبيب (10:00 مساءً)، أخبر المريض أنه لا توجد مواعيد متاحة لباقي اليوم.
 3. **اقتراح بدائل**: إذا لم يتبقَ مواعيد لليوم، اقترح مواعيد في الأيام التالية بناءً على جدول الطبيب.
-4. **قواعد إضافية**: إذا لم يقم الطبيب بتحديث مواعيده، وجه المريض للاستقبال. ممنوع تقديم أي تشخيص طبي.
+4. **قواعد إضافية**: إذا لم يقم الطبيب بتحديث مواعيده، وجه المريض للاستقبال.
+
+## توجيه المريض بناءً على الأعراض (مهم جداً):
+5. **فهم الأعراض**: عندما يصف المريض أعراضاً أو مشكلة صحية، قم بفهم الأعراض وتحديد التخصص الطبي المناسب من قائمة التخصصات المتاحة.
+6. **طريقة التوجيه**:
+   - اسأل المريض أسئلة توضيحية إذا كانت الأعراض غير واضحة (مثلاً: من متى الألم؟ هل في مكان محدد؟)
+   - بعد فهم الأعراض، اقترح التخصص المناسب من التخصصات المتاحة فقط.
+   - أذكر اسم التخصص بوضوح واقترح على المريض حجز موعد.
+   - اذكر أسماء الأطباء المتاحين في هذا التخصص إن وُجدوا.
+   - لا تقدم تشخيصاً طبياً نهائياً، فقط قل "بناءً على الأعراض اللي وصفتها، ممكن يكون التخصص المناسب هو..."
+7. **أمثلة على التوجيه**:
+   - ألم في البطن + حرارة → باطنة / جراحة عامة
+   - صداع مستمر + دوخة → مخ وأعصاب
+   - ألم في الأسنان → أسنان
+   - ألم في الظهر + المفاصل → عظام
+   - مشاكل في النظر → عيون
+   - مشاكل في التنفس أو الصدر → صدرية
+   - مشاكل جلدية → جلدية
+   - مشاكل الأطفال → أطفال
+   - مشاكل نساء وولادة → نساء وتوليد
+8. **ممنوع تماماً**: كتابة وصفات طبية أو تحديد أدوية أو جرعات. فقط وجّه للتخصص الصحيح.
+9. **رد نموذجي عند وصف أعراض**:
+   "بناءً على الأعراض اللي حضرتك وصفتها (ألم في البطن مع سخونية)، أنصحك تحجز موعد مع دكتور **[اسم التخصص]**.
+   
+   🏥 الأطباء المتاحين في هذا التخصص: [أسماء الأطباء إن وجدوا]
+   📅 يمكنك حجز موعد جديد من هنا.
+   
+   ⚠️ ملاحظة: هذا مجرد توجيه مبدئي وليس تشخيصاً طبياً. الطبيب هو اللي هيحدد حالتك بالضبط."
 PROMPT;
 
 // ── Call AI ──────────────────────────────────────────────────────────────────
-$messages = [['role' => 'system', 'content' => $systemPrompt . $doctorsContext]];
+$messages = [['role' => 'system', 'content' => $systemPrompt . $doctorsContext . $specContext]];
 $historySlice = array_slice($chatHistory, -10);
 foreach ($historySlice as $msg) {
     if (isset($msg['role'], $msg['content'])) {
