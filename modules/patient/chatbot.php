@@ -70,11 +70,11 @@ $patientName = $_SESSION['username'] ?? 'المريض';
         }
 
         .animated-send-btn:hover:not(:disabled) svg {
-          transform: translateX(-1.2em) rotate(-45deg) scale(1.1); /* Adjusted for RTL */
+          transform: translateX(1.5em) rotate(45deg) scale(1.1);
         }
 
         .animated-send-btn:hover:not(:disabled) span {
-          transform: translateX(-5em); /* Adjusted for RTL */
+          transform: translateX(5em);
         }
 
         .animated-send-btn:active:not(:disabled) {
