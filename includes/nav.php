@@ -1124,6 +1124,27 @@ if (!defined('HMS_NAV_ASSETS')) {
       document.addEventListener('DOMContentLoaded', function() {
         const loader = document.getElementById('global-loader');
         
+        // Add Global Footer
+        const footerHTML = `
+            <footer style="margin-top: auto; padding: 1.5rem; text-align: center; background-color: #f8fafc; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 0.9rem; font-family: 'Tajawal', sans-serif; width: 100%; z-index: 10;">
+                <p style="margin: 0; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    جميع الحقوق محفوظة &copy; ${new Date().getFullYear()} 
+                    <a href="/echo-team.php" style="color: #4f46e5; font-weight: 800; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#4338ca'" onmouseout="this.style.color='#4f46e5'">
+                        فريق ايكو تيم (Echo Team)
+                    </a>
+                    <i class="bi bi-heart-fill text-rose-500 text-sm"></i>
+                </p>
+            </footer>
+        `;
+        
+        const wrapper = document.querySelector('.min-h-full') || document.body;
+        if (wrapper !== document.body) {
+            wrapper.style.display = 'flex';
+            wrapper.style.flexDirection = 'column';
+            wrapper.style.minHeight = '100vh';
+        }
+        wrapper.insertAdjacentHTML('beforeend', footerHTML);
+        
         // Intercept link clicks
         document.querySelectorAll('a').forEach(anchor => {
           anchor.addEventListener('click', function(e) {
