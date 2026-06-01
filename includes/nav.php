@@ -955,12 +955,7 @@ if (!defined('HMS_NAV_ASSETS')) {
                     </div>
 
                     <div class="hms-med-desktop-actions">
-                        <!-- Language Switcher -->
-                        <!-- <?php $currentLang = $_SESSION['lang'] ?? 'ar'; ?>
-                        <div class="hms-lang-switch">
-                            <button type="button" class="hms-lang-btn <?= $currentLang === 'ar' ? 'is-active' : '' ?>" onclick="window.location.href='?lang=ar'">Arabic</button>
-                            <button type="button" class="hms-lang-btn <?= $currentLang === 'en' ? 'is-active' : '' ?>" onclick="window.location.href='?lang=en'">EN</button>
-                        </div> -->
+
 
                         <!-- Notification -->
                         <a href="/includes/notifications.php" class="hms-notif-btn" title="Notifications">
@@ -998,10 +993,7 @@ if (!defined('HMS_NAV_ASSETS')) {
                 </div>
 
                 <div class="hms-med-mobile-user">
-                    <div class="hms-lang-switch" style="width: 100%; display: flex; margin-bottom: 0.5rem;">
-                        <button type="button" style="flex: 1;" class="hms-lang-btn <?= $currentLang === 'ar' ? 'is-active' : '' ?>" onclick="window.location.href='?lang=ar'">Arabic</button>
-                        <button type="button" style="flex: 1;" class="hms-lang-btn <?= $currentLang === 'en' ? 'is-active' : '' ?>" onclick="window.location.href='?lang=en'">EN</button>
-                    </div>
+
                     <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" class="hms-med-user" style="width: 100%;">
                         <span class="hms-med-avatar"><?= htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') ?></span>
                         <div style="text-align: start;">
