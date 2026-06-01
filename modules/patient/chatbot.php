@@ -155,7 +155,7 @@ $patientName = $_SESSION['username'] ?? 'المريض';
         msgDiv.innerHTML = `
             <div class="flex items-start gap-3">
                 <div class="${bubbleClass}">
-                    <div class="text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>
+                    <div class="text-sm leading-relaxed">${text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#0ea5e9;font-weight:700;text-decoration:underline;">$1</a>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>
                 </div>
             </div>
         `;
