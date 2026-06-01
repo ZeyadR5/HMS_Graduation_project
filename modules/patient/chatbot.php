@@ -35,6 +35,61 @@ $patientName = $_SESSION['username'] ?? 'المريض';
         #chatMessages::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .msg-bot { @apply bg-white text-slate-800 rounded-2xl rounded-tl-none py-3 px-4 shadow-sm border border-slate-100; }
         .msg-user { @apply bg-primary text-white rounded-2xl rounded-tr-none py-3 px-4 shadow-md; }
+        
+        /* Animated Send Button */
+        .animated-send-btn {
+          font-family: inherit;
+          font-size: 16px;
+          background: #0ea5e9; /* matches primary */
+          color: white;
+          padding: 0.5em 1em;
+          padding-left: 0.9em;
+          display: flex;
+          align-items: center;
+          border: none;
+          border-radius: 12px;
+          overflow: hidden;
+          transition: all 0.2s;
+          cursor: pointer;
+        }
+
+        .animated-send-btn span {
+          display: block;
+          margin-right: 0.3em;
+          transition: all 0.3s ease-in-out;
+        }
+
+        .animated-send-btn svg {
+          display: block;
+          transform-origin: center center;
+          transition: transform 0.3s ease-in-out;
+        }
+
+        .animated-send-btn:hover:not(:disabled) .svg-wrapper {
+          animation: fly-1 0.6s ease-in-out infinite alternate;
+        }
+
+        .animated-send-btn:hover:not(:disabled) svg {
+          transform: translateX(-1.2em) rotate(-45deg) scale(1.1); /* Adjusted for RTL */
+        }
+
+        .animated-send-btn:hover:not(:disabled) span {
+          transform: translateX(-5em); /* Adjusted for RTL */
+        }
+
+        .animated-send-btn:active:not(:disabled) {
+          transform: scale(0.95);
+        }
+        
+        .animated-send-btn:disabled {
+          background: #cbd5e1; /* slate-300 */
+          cursor: not-allowed;
+        }
+
+        @keyframes fly-1 {
+          from { transform: translateY(0.1em); }
+          to { transform: translateY(-0.1em); }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -107,9 +162,17 @@ $patientName = $_SESSION['username'] ?? 'المريض';
                     ></textarea>
                     <button 
                         id="sendBtn"
-                        class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-all transform active:scale-95 shadow-md disabled:bg-slate-300"
+                        class="animated-send-btn shadow-md"
                     >
-                        <i class="bi bi-send-fill"></i>
+                      <div class="svg-wrapper-1">
+                        <div class="svg-wrapper">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="none" d="M0 0h24v24H0z"></path>
+                            <path fill="currentColor" d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z"></path>
+                          </svg>
+                        </div>
+                      </div>
+                      <span class="mr-2 text-sm font-medium">إرسال</span>
                     </button>
                 </div>
                 <p class="mt-3 text-[10px] text-center text-slate-400 flex items-center justify-center gap-1">
