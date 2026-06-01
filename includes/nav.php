@@ -1108,3 +1108,4 @@ if (!defined('HMS_NAV_ASSETS')) {
         });
     </script>
 <?php endif; ?>
+<?php require_once __DIR__ . '/global-loader.php'; ?>
