@@ -1126,15 +1126,27 @@ if (!defined('HMS_NAV_ASSETS')) {
         
         // Add Global Footer
         const footerHTML = `
-            <footer style="margin-top: auto; width: 100%; background: #ffffff; border-top: 1px solid #f1f5f9; padding: 1.25rem 2rem; display: flex; flex-direction: column; align-items: center; justify-content: space-between; font-family: 'Outfit', 'Tajawal', sans-serif; box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.02); z-index: 40; position: relative;" class="hms-global-footer">
-                <div style="display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.875rem; font-weight: 500;">
-                    <span>&copy; ${new Date().getFullYear()} HMS System. All rights reserved.</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.875rem; font-weight: 500; margin-top: 0.5rem;" class="footer-credits">
-                    Crafted with <i class="bi bi-heart-fill" style="color: #f43f5e; font-size: 1rem; animation: heartPulse 2s infinite;"></i> by 
-                    <a href="/echo-team.php" style="background: linear-gradient(135deg, #4f46e5, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; text-decoration: none; font-size: 1rem; padding: 0 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                        Echo Team
-                    </a>
+            <footer style="margin-top: auto; width: 100%; background: #ffffff; border-top: 1px solid #f1f5f9; padding: 1.5rem 2rem; font-family: 'Outfit', 'Tajawal', sans-serif; z-index: 40; position: relative;">
+                <div style="max-width: 80rem; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 1rem;" class="hms-global-footer-inner">
+                    
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 2rem; height: 2rem; border-radius: 0.5rem; background: linear-gradient(to bottom right, #4f46e5, #9333ea); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.875rem;">
+                            <i class="bi bi-hospital"></i>
+                        </div>
+                        <span style="font-weight: 700; color: #111827; font-size: 1rem;">HMS <span style="color: #4f46e5;">Pro</span></span>
+                    </div>
+
+                    <div style="color: #6b7280; font-weight: 500; font-size: 0.875rem; text-align: center;">
+                        &copy; ${new Date().getFullYear()} HMS System. All rights reserved.
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.25rem; color: #6b7280; font-size: 0.875rem; font-weight: 700;">
+                        Crafted with <i class="bi bi-heart-fill" style="color: #f43f5e; font-size: 1rem; animation: heartPulse 2s infinite; margin: 0 0.25rem;"></i> by 
+                        <a href="/echo-team.php" style="background: linear-gradient(135deg, #4f46e5, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; text-decoration: none; font-size: 1rem; margin-left: 0.25rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                            Echo Team
+                        </a>
+                    </div>
+
                 </div>
                 <style>
                     @keyframes heartPulse {
@@ -1142,8 +1154,7 @@ if (!defined('HMS_NAV_ASSETS')) {
                         50% { transform: scale(1.15); }
                     }
                     @media (min-width: 768px) {
-                        .hms-global-footer { flex-direction: row !important; }
-                        .footer-credits { margin-top: 0 !important; }
+                        .hms-global-footer-inner { flex-direction: row !important; gap: 0 !important; }
                     }
                 </style>
             </footer>
