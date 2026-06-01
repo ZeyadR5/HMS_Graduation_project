@@ -2,157 +2,140 @@
 session_start();
 ?>
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Echo Team - فريق العمل</title>
+    <title>Echo Team - About Us</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="icon" href="/assets/images/echol.png">
     <style>
-        body { 
-            font-family: 'Tajawal', sans-serif; 
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-            min-height: 100vh;
-        }
-        .team-card { 
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-        .team-card:hover { 
-            transform: translateY(-8px) scale(1.02); 
-            box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.1), 0 15px 15px -5px rgba(0, 0, 0, 0.04); 
-            background: rgba(255, 255, 255, 0.95);
-        }
-        .avatar-container {
-            position: relative;
-        }
+        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; }
+        .team-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.5); backdrop-filter: blur(10px); }
+        .team-card:hover { transform: translateY(-8px); box-shadow: 0 25px 30px -5px rgba(79, 70, 229, 0.15), 0 15px 15px -5px rgba(79, 70, 229, 0.08); border-color: rgba(79, 70, 229, 0.3); }
+        .avatar-container { position: relative; }
         .avatar-container::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
+            content: ''; position: absolute; inset: -4px; border-radius: 50%;
             background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.4s ease;
+            z-index: -1; opacity: 0; transition: opacity 0.3s ease;
         }
-        .team-card:hover .avatar-container::after {
-            opacity: 1;
-        }
-        .gradient-text {
-            background: linear-gradient(135deg, #4f46e5, #9333ea);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        .team-card:hover .avatar-container::after { opacity: 1; }
+        .gradient-text { background: linear-gradient(135deg, #4f46e5, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
-<body class="flex flex-col">
-    <?php 
-    $activePage = 'echo-team';
-    if (isset($_SESSION['role'])) {
-        require_once __DIR__ . '/includes/nav.php';
-    }
-    ?>
+<body>
+    <div class="min-h-full flex flex-col">
+        <?php 
+        if (isset($_SESSION['role'])) {
+            $activePage = 'echo-team';
+            require_once __DIR__ . '/includes/nav.php';
+        } else {
+            echo '<header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 p-4 border-b border-gray-100">
+                    <div class="max-w-7xl mx-auto flex justify-between items-center">
+                        <h1 class="text-2xl font-black gradient-text tracking-tight flex items-center gap-2">
+                            <i class="bi bi-layers-half text-indigo-600"></i> Echo Team
+                        </h1>
+                        <a href="/index.php" class="text-sm font-semibold text-gray-500 hover:text-indigo-600 transition-colors">Back to Home</a>
+                    </div>
+                  </header>';
+        }
+        ?>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
-        <div class="text-center mb-20 relative">
-            <h2 class="text-lg font-bold tracking-widest uppercase text-indigo-500 mb-2">Get to Know Us</h2>
-            <p class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">
-                <span class="gradient-text">Echo Team</span>
-            </p>
-            <div class="h-1 w-24 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mx-auto rounded-full"></div>
-            <p class="mt-8 max-w-2xl text-xl text-slate-600 mx-auto leading-relaxed">
-                An elite group of developers and designers coming together to build an integrated medical system that combines high performance, data security, and stunning design.
-            </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-            
-            <?php
-            $team = [
-                [
-                    'name' => 'Zeyad Yasser',
-                    'role' => 'Full Stack & Team Leader',
-                    'desc' => 'Team leader, full stack developer, system architect, and general supervisor.',
-                    'color' => 'indigo',
-                    'icon' => 'bi-person-badge-fill'
-                ],
-                [
-                    'name' => 'AbdEl-Rahman Gamal',
-                    'role' => 'Back-End Developer & DB',
-                    'desc' => 'Database and backend development expert, ensuring efficient data processing.',
-                    'color' => 'emerald',
-                    'icon' => 'bi-database-fill-gear'
-                ],
-                [
-                    'name' => 'Amnaa Mohamed',
-                    'role' => 'Back-End Developer & DB',
-                    'desc' => 'Backend and database developer, specializing in securing systems and database design.',
-                    'color' => 'teal',
-                    'icon' => 'bi-server'
-                ],
-                [
-                    'name' => 'Nada Taha',
-                    'role' => 'Front-End Developer',
-                    'desc' => 'Frontend developer, working on transforming designs into interactive user experiences.',
-                    'color' => 'rose',
-                    'icon' => 'bi-window-sidebar'
-                ],
-                [
-                    'name' => 'Aya Shapan',
-                    'role' => 'Front-End Developer',
-                    'desc' => 'Frontend developer, attentive to UI details and building responsive components.',
-                    'color' => 'pink',
-                    'icon' => 'bi-palette-fill'
-                ],
-                [
-                    'name' => 'Mohamed Ahmed',
-                    'role' => 'Front-End & Documentation',
-                    'desc' => 'Frontend developer and documentation lead, ensuring code integration and clear user guides.',
-                    'color' => 'blue',
-                    'icon' => 'bi-file-earmark-code-fill'
-                ]
-            ];
-
-            foreach ($team as $member) {
-                $color = $member['color'];
-            ?>
-            <div class="team-card rounded-3xl p-8 text-center">
-                <div class="avatar-container w-28 h-28 mx-auto bg-white rounded-full flex items-center justify-center mb-6 shadow-md border-4 border-<?= $color ?>-50 text-<?= $color ?>-500">
-                    <i class="bi <?= $member['icon'] ?> text-5xl"></i>
-                </div>
-                <h3 class="text-2xl font-extrabold text-slate-800 mb-2"><?= $member['name'] ?></h3>
-                <div class="inline-block bg-<?= $color ?>-100 text-<?= $color ?>-700 px-4 py-1.5 rounded-full text-sm font-bold mb-5 shadow-sm">
-                    <?= $member['role'] ?>
-                </div>
-                <p class="text-slate-500 text-sm leading-relaxed mb-8">
-                    <?= $member['desc'] ?>
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center mb-20">
+                <span class="px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm tracking-widest uppercase mb-4 inline-block ring-1 ring-indigo-200">Meet The Minds</span>
+                <h2 class="mt-4 text-4xl leading-tight font-black tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+                    The <span class="gradient-text">Echo Team</span>
+                </h2>
+                <p class="mt-6 max-w-2xl text-lg text-gray-500 mx-auto font-medium">
+                    We are a group of passionate developers dedicated to crafting seamless, innovative, and robust digital solutions for modern healthcare management.
                 </p>
-                
-                <div class="flex justify-center gap-5 pt-4 border-t border-slate-200/60">
-                    <a href="#" class="text-slate-400 hover:text-[#181717] transition-all hover:scale-110" title="GitHub"><i class="bi bi-github text-xl"></i></a>
-                    <a href="#" class="text-slate-400 hover:text-[#0A66C2] transition-all hover:scale-110" title="LinkedIn"><i class="bi bi-linkedin text-xl"></i></a>
-                    <a href="#" class="text-slate-400 hover:text-[#EA4335] transition-all hover:scale-110" title="Email"><i class="bi bi-envelope-at-fill text-xl"></i></a>
-                </div>
             </div>
-            <?php } ?>
 
-        </div>
-    </main>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+                
+                <!-- Zeyad Yasser -->
+                <div class="team-card bg-white/70 rounded-3xl p-8 text-center shadow-lg" dir="ltr">
+                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-indigo-50 flex items-center justify-center mb-6 text-indigo-600 border-4 border-white shadow-inner">
+                        <i class="bi bi-person-fill text-6xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Zeyad Yasser</h3>
+                    <p class="text-indigo-600 font-bold text-sm uppercase tracking-wider mb-6">Full Stack & Team Leader</p>
+                    <div class="flex justify-center gap-5">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-900 hover:text-white transition-all shadow-sm"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="bi bi-linkedin text-lg"></i></a>
+                    </div>
+                </div>
 
-    <?php if (!isset($_SESSION['role'])): ?>
-    <footer style="margin-top: auto; padding: 1.5rem; text-align: center; background-color: #1e293b; color: #cbd5e1; font-size: 0.9rem; font-family: 'Tajawal', sans-serif;">
-        <p style="margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500;">
-            All rights reserved &copy; <?= date('Y') ?> 
-            <span style="color: #818cf8; font-weight: 800;">Echo Team</span>
-            <i class="bi bi-suit-heart-fill text-rose-500"></i>
-        </p>
-    </footer>
-    <?php endif; ?>
+                <!-- AbdEl-Rahman Gamal -->
+                <div class="team-card bg-white/70 rounded-3xl p-8 text-center shadow-lg" dir="ltr">
+                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-blue-50 flex items-center justify-center mb-6 text-blue-600 border-4 border-white shadow-inner">
+                        <i class="bi bi-person-fill text-6xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">AbdEl-Rahman Gamal</h3>
+                    <p class="text-blue-600 font-bold text-sm uppercase tracking-wider mb-6">Back-End Developer & DB</p>
+                    <div class="flex justify-center gap-5">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-900 hover:text-white transition-all shadow-sm"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="bi bi-linkedin text-lg"></i></a>
+                    </div>
+                </div>
+
+                <!-- Amnaa Mohamed -->
+                <div class="team-card bg-white/70 rounded-3xl p-8 text-center shadow-lg" dir="ltr">
+                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-purple-50 flex items-center justify-center mb-6 text-purple-600 border-4 border-white shadow-inner">
+                        <i class="bi bi-person-fill text-6xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Amnaa Mohamed</h3>
+                    <p class="text-purple-600 font-bold text-sm uppercase tracking-wider mb-6">Back-End Developer & DB</p>
+                    <div class="flex justify-center gap-5">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-900 hover:text-white transition-all shadow-sm"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="bi bi-linkedin text-lg"></i></a>
+                    </div>
+                </div>
+
+                <!-- Nada Taha -->
+                <div class="team-card bg-white/70 rounded-3xl p-8 text-center shadow-lg" dir="ltr">
+                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-rose-50 flex items-center justify-center mb-6 text-rose-600 border-4 border-white shadow-inner">
+                        <i class="bi bi-person-fill text-6xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Nada Taha</h3>
+                    <p class="text-rose-600 font-bold text-sm uppercase tracking-wider mb-6">Front-End Developer</p>
+                    <div class="flex justify-center gap-5">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-900 hover:text-white transition-all shadow-sm"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="bi bi-linkedin text-lg"></i></a>
+                    </div>
+                </div>
+
+                <!-- Aya Shapan -->
+                <div class="team-card bg-white/70 rounded-3xl p-8 text-center shadow-lg" dir="ltr">
+                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-pink-50 flex items-center justify-center mb-6 text-pink-600 border-4 border-white shadow-inner">
+                        <i class="bi bi-person-fill text-6xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Aya Shapan</h3>
+                    <p class="text-pink-600 font-bold text-sm uppercase tracking-wider mb-6">Front-End Developer</p>
+                    <div class="flex justify-center gap-5">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-900 hover:text-white transition-all shadow-sm"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="bi bi-linkedin text-lg"></i></a>
+                    </div>
+                </div>
+
+                <!-- Mohamed Ahmed -->
+                <div class="team-card bg-white/70 rounded-3xl p-8 text-center shadow-lg" dir="ltr">
+                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-emerald-50 flex items-center justify-center mb-6 text-emerald-600 border-4 border-white shadow-inner">
+                        <i class="bi bi-person-fill text-6xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Mohamed Ahmed</h3>
+                    <p class="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-6">Front-End & Documentation</p>
+                    <div class="flex justify-center gap-5">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-900 hover:text-white transition-all shadow-sm"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="bi bi-linkedin text-lg"></i></a>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
 </body>
 </html>

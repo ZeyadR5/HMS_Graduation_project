@@ -1126,13 +1126,26 @@ if (!defined('HMS_NAV_ASSETS')) {
         
         // Add Global Footer
         const footerHTML = `
-            <footer style="width: 100%; background-color: #263e5b; color: #f8fafc; text-align: center; padding: 1.5rem 1rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.3px; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); z-index: 40; position: relative;">
-                <div style="margin-bottom: 0.6rem;">
-                    Copyright &copy; ${new Date().getFullYear()} &mdash; Zeyad Yasser, IT Manager @ Gamma Scan Center
+            <footer style="margin-top: auto; width: 100%; background: #ffffff; border-top: 1px solid #f1f5f9; padding: 1.25rem 2rem; display: flex; flex-direction: column; align-items: center; justify-content: space-between; font-family: 'Outfit', 'Tajawal', sans-serif; box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.02); z-index: 40; position: relative;" class="hms-global-footer">
+                <div style="display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.875rem; font-weight: 500;">
+                    <span>&copy; ${new Date().getFullYear()} HMS System. All rights reserved.</span>
                 </div>
-                <div style="font-size: 0.85rem; color: #cbd5e1;">
-                    WhatsApp: <a href="https://wa.me/201024474059" style="color: #60a5fa; text-decoration: none; font-weight: 600; transition: color 0.2s;" onmouseover="this.style.color='#93c5fd'" onmouseout="this.style.color='#60a5fa'" target="_blank">wa.me/201024474059</a>
+                <div style="display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.875rem; font-weight: 500; margin-top: 0.5rem;" class="footer-credits">
+                    Crafted with <i class="bi bi-heart-fill" style="color: #f43f5e; font-size: 1rem; animation: heartPulse 2s infinite;"></i> by 
+                    <a href="/echo-team.php" style="background: linear-gradient(135deg, #4f46e5, #9333ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; text-decoration: none; font-size: 1rem; padding: 0 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                        Echo Team
+                    </a>
                 </div>
+                <style>
+                    @keyframes heartPulse {
+                        0%, 100% { transform: scale(1); }
+                        50% { transform: scale(1.15); }
+                    }
+                    @media (min-width: 768px) {
+                        .hms-global-footer { flex-direction: row !important; }
+                        .footer-credits { margin-top: 0 !important; }
+                    }
+                </style>
             </footer>
         `;
         

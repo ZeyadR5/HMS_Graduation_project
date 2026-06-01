@@ -871,7 +871,6 @@ if (pass2) {
 </script>
 
 <script src="/assets/js/responsive-nav.js" defer></script>
-
 </body>
 </html>
 
