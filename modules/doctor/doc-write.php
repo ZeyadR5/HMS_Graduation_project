@@ -115,6 +115,7 @@ if (isset($_POST['submit'])) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="icon" href="../../assets/images/echol.png">
   <link rel="stylesheet" href="/assets/css/responsive.css">
+  <link rel="stylesheet" href="/assets/css/generate-button.css">
 </head>
 <body>
   <div class="min-h-full">
@@ -210,9 +211,9 @@ if (isset($_POST['submit'])) {
                   </div>
 
                   <div class="flex flex-col gap-3">
-                    <button type="button" id="generateAiNote"
-                      class="flex items-center justify-center gap-2 w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-all active:scale-95">
-                      <i class="bi bi-magic"></i> Generate structured Report
+                    <button type="button" id="generateAiNote" class="pb-ai-button">
+                      <span>Generate structured Report</span>
+                      <span class="pb-ai-sparkle">✦</span>
                     </button>
 
                     <button type="button" id="summarizeHistory"
