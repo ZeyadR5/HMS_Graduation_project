@@ -13,8 +13,21 @@ if (!function_exists('hms_nav_item')) {
     function hms_nav_item(string $href, string $label, string $key): array
     {
         return [
+            'type' => 'link',
             'href' => $href,
             'label' => $label,
+            'key' => $key,
+        ];
+    }
+}
+
+if (!function_exists('hms_nav_dropdown')) {
+    function hms_nav_dropdown(string $label, array $items, string $key): array
+    {
+        return [
+            'type' => 'dropdown',
+            'label' => $label,
+            'items' => $items,
             'key' => $key,
         ];
     }
@@ -49,7 +62,75 @@ if (!function_exists('hms_nav_initials')) {
 if (!function_exists('hms_render_nav_link')) {
     function hms_render_nav_link(array $item, string $activePage, bool $mobile = false): string
     {
-        $isActive = ($activePage === $item['key']);
+        $type = $item['type'] ?? 'link';
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        
+        if ($type === 'dropdown') {
+            $isActive = false;
+            $itemsHtml = '';
+            foreach ($item['items'] as $subItem) {
+                // Check if sub item is active
+                $isSubActive = ($activePage === $subItem['key']) || (strpos($requestUri, $subItem['href']) !== false && $subItem['href'] !== '/modules/dashboard.php');
+                if ($isSubActive) {
+                    $isActive = true;
+                }
+                
+                $subClassName = $mobile ? 'hms-med-mobile-sublink' : 'hms-med-nav-sublink';
+                if ($isSubActive) {
+                    $subClassName .= ' is-active';
+                }
+                
+                $itemsHtml .= sprintf(
+                    "<a href='%s' class='%s'>%s</a>",
+                    htmlspecialchars($subItem['href'], ENT_QUOTES, 'UTF-8'),
+                    $subClassName,
+                    htmlspecialchars($subItem['label'], ENT_QUOTES, 'UTF-8')
+                );
+            }
+            
+            if ($mobile) {
+                $btnClass = 'hms-med-mobile-link hms-med-mobile-dropdown-btn';
+                if ($isActive) $btnClass .= ' is-active';
+                $dropdownId = 'mob-drop-' . $item['key'];
+                // Expanded by default if active
+                $expanded = $isActive ? 'true' : 'false';
+                $contentClass = $isActive ? 'hms-med-mobile-dropdown-content is-open' : 'hms-med-mobile-dropdown-content';
+                
+                return sprintf(
+                    "<div class='hms-med-mobile-dropdown'>
+                        <button type='button' class='%s' aria-expanded='%s' aria-controls='%s'>
+                            <span>%s</span>
+                            <svg class='hms-chevron' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>
+                        </button>
+                        <div class='%s' id='%s'>%s</div>
+                    </div>",
+                    $btnClass,
+                    $expanded,
+                    $dropdownId,
+                    htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8'),
+                    $contentClass,
+                    $dropdownId,
+                    $itemsHtml
+                );
+            } else {
+                $btnClass = 'hms-med-nav-link hms-med-nav-dropdown-btn';
+                if ($isActive) $btnClass .= ' is-active';
+                return sprintf(
+                    "<div class='hms-med-nav-dropdown'>
+                        <button type='button' class='%s' aria-expanded='false'>
+                            <span>%s</span>
+                            <svg class='hms-chevron' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>
+                        </button>
+                        <div class='hms-med-nav-dropdown-content'>%s</div>
+                    </div>",
+                    $btnClass,
+                    htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8'),
+                    $itemsHtml
+                );
+            }
+        }
+
+        $isActive = ($activePage === $item['key']) || (strpos($requestUri, $item['href']) !== false && $item['href'] !== '/modules/dashboard.php');
         $className = $mobile ? 'hms-med-mobile-link' : 'hms-med-nav-link';
         if ($isActive) {
             $className .= ' is-active';
@@ -74,15 +155,19 @@ switch ($role) {
         $links = [
             hms_nav_item('/modules/dashboard.php', 'Dashboard', 'dashboard'),
             hms_nav_item('/modules/admin/admin-Reservations.php', 'Reservations', 'reservations'),
-            hms_nav_item('/modules/admin/admin-Payments.php', 'Payments', 'payments'),
-            hms_nav_item('/includes/audit-log.php', 'Audit Log', 'audit-log'),
-            hms_nav_item('/includes/med-record.php', 'Medical Record', 'medical-record'),
-            hms_nav_item('/modules/admin/Add-user.php', 'Add User', 'add-user'),
-            hms_nav_item('/modules/admin/admin-user-log.php', 'Users', 'users'),
-            hms_nav_item('/modules/admin/doc.php', 'Doctors', 'doctors'),
-            hms_nav_item('/modules/shared/doc-timetable.php', 'Doctors Time Table', 'time-table'),
-            hms_nav_item('/modules/shared/queue-screen.php', 'Queue Board', 'queue-board'),
-            //hms_nav_item('/includes/notifications.php', 'Notifications', 'notifications'),
+            hms_nav_item('/includes/med-record.php', 'Medical Records', 'medical-record'),
+            hms_nav_dropdown('Management', [
+                hms_nav_item('/modules/admin/admin-user-log.php', 'Users', 'users'),
+                hms_nav_item('/modules/admin/Add-user.php', 'Add User', 'add-user'),
+                hms_nav_item('/modules/admin/doc.php', 'Doctors', 'doctors'),
+                hms_nav_item('/modules/admin/Manage-specializations.php', 'Specializations', 'manage-specializations'),
+                hms_nav_item('/modules/shared/doc-timetable.php', 'Timetable', 'time-table'),
+                hms_nav_item('/includes/audit-log.php', 'Audit Log', 'audit-log'),
+            ], 'management'),
+            hms_nav_dropdown('Operations', [
+                hms_nav_item('/modules/admin/admin-Payments.php', 'Payments', 'payments'),
+                hms_nav_item('/modules/shared/queue-screen.php', 'Queue Board', 'queue-board'),
+            ], 'operations'),
         ];
         break;
 
@@ -90,17 +175,20 @@ switch ($role) {
         $links = [
             hms_nav_item('/modules/dashboard.php', 'Dashboard', 'dashboard'),
             hms_nav_item('/modules/super-admin/super-Reservations.php', 'Reservations', 'reservations'),
-            hms_nav_item('/modules/super-admin/super-Payments.php', 'Payments', 'payments'),
-            hms_nav_item('/includes/audit-log.php', 'Audit Log', 'audit-log'),
-            hms_nav_item('/includes/med-record.php', 'Med Record', 'medical-record'),
-            hms_nav_item('/modules/super-admin/Add-user.php', 'Add User', 'add-user'),
-            hms_nav_item('/modules/super-admin/Add-Doctor.php', 'Add Doctor', 'add-doctor'),
-            hms_nav_item('/modules/super-admin/Add-specilization.php', 'Add Specialization', 'add-specialization'),
-            hms_nav_item('/modules/super-admin/super-user-log.php', 'Users', 'users'),
-            hms_nav_item('/modules/super-admin/doc.php', 'Doctors', 'doctors'),
-            hms_nav_item('/modules/shared/doc-timetable.php', 'Doctors Time Table', 'time-table'),
-            hms_nav_item('/modules/shared/queue-screen.php', 'Queue Board', 'queue-board'),
-            //hms_nav_item('/includes/notifications.php', 'Notifications', 'notifications'),
+            hms_nav_item('/includes/med-record.php', 'Medical Records', 'medical-record'),
+            hms_nav_dropdown('Management', [
+                hms_nav_item('/modules/super-admin/super-user-log.php', 'Users', 'users'),
+                hms_nav_item('/modules/super-admin/Add-user.php', 'Add User', 'add-user'),
+                hms_nav_item('/modules/super-admin/doc.php', 'Doctors', 'doctors'),
+                hms_nav_item('/modules/super-admin/Add-Doctor.php', 'Add Doctor', 'add-doctor'),
+                hms_nav_item('/modules/super-admin/Add-specilization.php', 'Specializations', 'manage-specializations'),
+                hms_nav_item('/modules/shared/doc-timetable.php', 'Timetable', 'time-table'),
+                hms_nav_item('/includes/audit-log.php', 'Audit Log', 'audit-log'),
+            ], 'management'),
+            hms_nav_dropdown('Operations', [
+                hms_nav_item('/modules/super-admin/super-Payments.php', 'Payments', 'payments'),
+                hms_nav_item('/modules/shared/queue-screen.php', 'Queue Board', 'queue-board'),
+            ], 'operations'),
         ];
         break;
 
@@ -109,20 +197,18 @@ switch ($role) {
             hms_nav_item('/modules/dashboard.php', 'Dashboard', 'dashboard'),
             hms_nav_item('/modules/doctor/schedule.php', 'My Schedule', 'my-schedule'),
             hms_nav_item('/modules/doctor/doc-Reservations.php', 'Reservations', 'reservations'),
-            hms_nav_item('/includes/med-record.php', 'Medical Record', 'medical-record'),
+            hms_nav_item('/includes/med-record.php', 'Medical Records', 'medical-record'),
             hms_nav_item('/modules/doctor/doc-write.php', 'Write Report', 'write-report'),
-            //hms_nav_item('/includes/notifications.php', 'Notifications', 'notifications'),
         ];
         break;
 
     case 'User':
         $links = [
             hms_nav_item('/modules/dashboard.php', 'Dashboard', 'dashboard'),
-            hms_nav_item('/modules/user/new_appoint.php', 'New Appointment', 'new-appointment'),
+            hms_nav_item('/modules/user/new_appoint.php', 'New Reservation', 'new-reservation'),
             hms_nav_item('/modules/user/Reservations.php', 'Reservations', 'reservations'),
-            hms_nav_item('/includes/med-record.php', 'Medical Record', 'medical-record'),
+            hms_nav_item('/includes/med-record.php', 'Medical Records', 'medical-record'),
             hms_nav_item('/modules/shared/doc-timetable.php', 'Doctors Time Table', 'time-table'),
-            //hms_nav_item('/includes/notifications.php', 'Notifications', 'notifications'),
         ];
         break;
 
@@ -130,13 +216,11 @@ switch ($role) {
         $links = [
             hms_nav_item('/modules/dashboard.php', 'Dashboard', 'dashboard'),
             hms_nav_item('/modules/patient/New-reservation.php', 'New Reservation', 'new-reservation'),
-            // hms_nav_item('/modules/patient/Reservations.php', 'My Reservations', 'reservations'),
             hms_nav_item('/modules/patient/calender.php', 'Calendar', 'calendar'),
-            hms_nav_item('/includes/med-record.php', 'Medical Record', 'medical-record'),
+            hms_nav_item('/includes/med-record.php', 'Medical Records', 'medical-record'),
             hms_nav_item('/modules/shared/doc-timetable.php', 'Doctors Time Table', 'time-table'),
             hms_nav_item('/modules/patient/chatbot.php', 'AI Assistant', 'ai-assistant'),
             hms_nav_item('/modules/shared/queue-public.php', 'Live Queue', 'live-queue'),
-            //hms_nav_item('/includes/notifications.php', 'Notifications', 'notifications'),
         ];
         break;
 }
@@ -167,7 +251,6 @@ if (!defined('HMS_NAV_ASSETS')) {
             backdrop-filter: blur(8px);
             width: 100%;
             max-width: 100vw;
-            overflow-x: hidden;
         }
 
         .hms-med-nav-card {
@@ -585,6 +668,239 @@ if (!defined('HMS_NAV_ASSETS')) {
                 height: 32px !important;
             }
         }
+
+        /* Language Switcher */
+        .hms-lang-switch {
+            display: inline-flex;
+            align-items: center;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 0.2rem;
+            border: 1px solid #e2e8f0;
+        }
+        .hms-lang-btn {
+            padding: 0.35rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .hms-lang-btn.is-active {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+        }
+
+        /* Notifications */
+        .hms-notif-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: 1px solid #dbeafe;
+            background: #f8fbff;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .hms-notif-btn:hover {
+            color: #0f172a;
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+        .hms-notif-badge {
+            position: absolute;
+            top: -4px;
+            inset-inline-end: -4px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ef4444, #f97316);
+            color: white;
+            font-size: 0.68rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Nav Dropdown Desktop */
+        .hms-med-nav-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .hms-med-nav-dropdown-btn {
+            cursor: pointer;
+            background: transparent;
+        }
+        .hms-med-nav-dropdown-btn .hms-chevron {
+            transition: transform 0.2s ease;
+        }
+        .hms-med-nav-dropdown:hover .hms-chevron,
+        .hms-med-nav-dropdown.is-open .hms-chevron {
+            transform: rotate(180deg);
+        }
+        .hms-med-nav-dropdown-content {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            inset-inline-start: 50%;
+            transform: translateX(-50%);
+            min-width: 220px;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1);
+            padding: 0.5rem;
+            z-index: 100;
+        }
+        .hms-med-nav-dropdown-content::before {
+            content: '';
+            position: absolute;
+            top: -0.5rem;
+            left: 0;
+            width: 100%;
+            height: 0.5rem;
+        }
+        html[dir="rtl"] .hms-med-nav-dropdown-content {
+            transform: translateX(50%);
+        }
+        .hms-med-nav-dropdown:hover .hms-med-nav-dropdown-content,
+        .hms-med-nav-dropdown.is-open .hms-med-nav-dropdown-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .hms-med-nav-sublink {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 0.8rem;
+            border-radius: 10px;
+            color: #475569;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .hms-med-nav-sublink:hover, .hms-med-nav-sublink.is-active {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        .hms-med-nav-sublink.is-active {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        /* Nav Dropdown Mobile */
+        .hms-med-mobile-dropdown {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .hms-med-mobile-dropdown-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            cursor: pointer;
+        }
+        .hms-med-mobile-dropdown-btn .hms-chevron {
+            transition: transform 0.2s ease;
+        }
+        .hms-med-mobile-dropdown-btn[aria-expanded="true"] .hms-chevron {
+            transform: rotate(180deg);
+        }
+        .hms-med-mobile-dropdown-content {
+            display: none;
+            flex-direction: column;
+            padding: 0.5rem 0.5rem 0 1.5rem;
+            gap: 0.4rem;
+        }
+        html[dir="rtl"] .hms-med-mobile-dropdown-content {
+            padding: 0.5rem 1.5rem 0 0.5rem;
+        }
+        .hms-med-mobile-dropdown-content.is-open {
+            display: flex;
+        }
+        .hms-med-mobile-sublink {
+            display: block;
+            padding: 0.5rem 0.8rem;
+            border-radius: 10px;
+            color: #475569;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .hms-med-mobile-sublink.is-active {
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+        /* Profile Dropdown */
+        .hms-med-profile-dropdown {
+            position: relative;
+        }
+        .hms-med-profile-dropdown-content {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            inset-inline-end: 0;
+            min-width: 200px;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1);
+            padding: 0.5rem;
+            z-index: 100;
+        }
+        .hms-med-profile-dropdown-content::before {
+            content: '';
+            position: absolute;
+            top: -0.5rem;
+            left: 0;
+            width: 100%;
+            height: 0.5rem;
+        }
+        .hms-med-profile-dropdown:hover .hms-med-profile-dropdown-content,
+        .hms-med-profile-dropdown.is-open .hms-med-profile-dropdown-content {
+            display: flex;
+            flex-direction: column;
+        }
+        .hms-med-profile-dropdown-content a {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 0.8rem;
+            border-radius: 10px;
+            color: #475569;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .hms-med-profile-dropdown-content a:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        .hms-med-profile-dropdown-content a.hms-logout-link {
+            color: #ef4444;
+        }
+        .hms-med-profile-dropdown-content a.hms-logout-link:hover {
+            background: #fef2f2;
+        }
+        .hms-dropdown-divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 0.3rem 0;
+        }
     </style>
     <?php
 }
@@ -639,30 +955,39 @@ if (!defined('HMS_NAV_ASSETS')) {
                     </div>
 
                     <div class="hms-med-desktop-actions">
-                        <?php if ($_hmsUnreadCount > 0): ?>
-                        <a href="/includes/notifications.php" style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;border:1px solid #dbeafe;background:#f8fbff;color:#0f172a;text-decoration:none;transition:all 0.2s;" title="Notifications">
-                            <i class="bi bi-bell-fill" style="font-size:1.1rem;"></i>
-                            <span style="position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:linear-gradient(135deg,#ef4444,#f97316);color:white;font-size:0.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(239,68,68,0.4);"><?= $_hmsUnreadCount > 99 ? '99+' : $_hmsUnreadCount ?></span>
-                        </a>
-                        <?php else: ?>
-                        <a href="/includes/notifications.php" style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;border:1px solid #dbeafe;background:#f8fbff;color:#94a3b8;text-decoration:none;transition:all 0.2s;" title="Notifications">
-                            <i class="bi bi-bell" style="font-size:1.1rem;"></i>
-                        </a>
-                        <?php endif; ?>
-                        <?php $profileUrl = ($role === 'Patient') ? '/modules/patient/Profile.php' : '/modules/shared/profile.php'; ?>
-                        <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" class="hms-med-user">
-                            <span
-                                class="hms-med-avatar"><?= htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') ?></span>
-                            <div>
-                                <div class="hms-med-user-name">
-                                    <?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></div>
-                                <div class="hms-med-user-role"><?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?>
-                                </div>
-                            </div>
+                        <!-- Language Switcher -->
+                        <!-- <?php $currentLang = $_SESSION['lang'] ?? 'ar'; ?>
+                        <div class="hms-lang-switch">
+                            <button type="button" class="hms-lang-btn <?= $currentLang === 'ar' ? 'is-active' : '' ?>" onclick="window.location.href='?lang=ar'">Arabic</button>
+                            <button type="button" class="hms-lang-btn <?= $currentLang === 'en' ? 'is-active' : '' ?>" onclick="window.location.href='?lang=en'">EN</button>
+                        </div> -->
+
+                        <!-- Notification -->
+                        <a href="/includes/notifications.php" class="hms-notif-btn" title="Notifications">
+                            <i class="bi <?= $_hmsUnreadCount > 0 ? 'bi-bell-fill' : 'bi-bell' ?>" style="font-size:1.1rem;"></i>
+                            <?php if ($_hmsUnreadCount > 0): ?>
+                            <span class="hms-notif-badge"><?= $_hmsUnreadCount > 99 ? '99+' : $_hmsUnreadCount ?></span>
+                            <?php endif; ?>
                         </a>
 
-                        <a href="<?= htmlspecialchars($logoutHref, ENT_QUOTES, 'UTF-8') ?>" class="hms-med-logout">Log
-                            Out</a>
+                        <!-- Profile Dropdown -->
+                        <?php $profileUrl = ($role === 'Patient') ? '/modules/patient/Profile.php' : '/modules/shared/profile.php'; ?>
+                        <div class="hms-med-profile-dropdown" data-profile-dropdown>
+                            <button type="button" class="hms-med-user" aria-expanded="false">
+                                <span class="hms-med-avatar"><?= htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') ?></span>
+                                <div style="text-align: start;">
+                                    <div class="hms-med-user-name"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></div>
+                                    <div class="hms-med-user-role"><?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?></div>
+                                </div>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-inline-start: 4px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
+                            <div class="hms-med-profile-dropdown-content">
+                                <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>">Profile</a>
+                                <a href="#">Settings</a>
+                                <div class="hms-dropdown-divider"></div>
+                                <a href="<?= htmlspecialchars($logoutHref, ENT_QUOTES, 'UTF-8') ?>" class="hms-logout-link">Log Out</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -673,18 +998,19 @@ if (!defined('HMS_NAV_ASSETS')) {
                 </div>
 
                 <div class="hms-med-mobile-user">
-                    <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" class="hms-med-user">
+                    <div class="hms-lang-switch" style="width: 100%; display: flex; margin-bottom: 0.5rem;">
+                        <button type="button" style="flex: 1;" class="hms-lang-btn <?= $currentLang === 'ar' ? 'is-active' : '' ?>" onclick="window.location.href='?lang=ar'">Arabic</button>
+                        <button type="button" style="flex: 1;" class="hms-lang-btn <?= $currentLang === 'en' ? 'is-active' : '' ?>" onclick="window.location.href='?lang=en'">EN</button>
+                    </div>
+                    <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" class="hms-med-user" style="width: 100%;">
                         <span class="hms-med-avatar"><?= htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') ?></span>
-                        <div>
-                            <div class="hms-med-user-name"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?>
-                            </div>
-                            <div class="hms-med-user-role"><?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?>
-                            </div>
+                        <div style="text-align: start;">
+                            <div class="hms-med-user-name"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="hms-med-user-role"><?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?></div>
                         </div>
                     </a>
 
-                    <a href="<?= htmlspecialchars($logoutHref, ENT_QUOTES, 'UTF-8') ?>" class="hms-med-logout">Log
-                        Out</a>
+                    <a href="<?= htmlspecialchars($logoutHref, ENT_QUOTES, 'UTF-8') ?>" class="hms-med-logout" style="width: 100%;">Log Out</a>
                 </div>
             </div>
         </div>
@@ -710,8 +1036,51 @@ if (!defined('HMS_NAV_ASSETS')) {
                 });
             });
 
+            // Desktop Dropdowns
+            document.querySelectorAll('.hms-med-nav-dropdown, .hms-med-profile-dropdown').forEach(dropdown => {
+                const btn = dropdown.querySelector('.hms-med-nav-dropdown-btn, .hms-med-user');
+                if (btn) {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Close others
+                        document.querySelectorAll('.hms-med-nav-dropdown.is-open, .hms-med-profile-dropdown.is-open').forEach(el => {
+                            if (el !== dropdown) el.classList.remove('is-open');
+                        });
+                        dropdown.classList.toggle('is-open');
+                    });
+                }
+                
+                dropdown.addEventListener('mouseenter', () => {
+                    document.querySelectorAll('.hms-med-nav-dropdown.is-open, .hms-med-profile-dropdown.is-open').forEach(el => {
+                        if (el !== dropdown) el.classList.remove('is-open');
+                    });
+                });
+
+                dropdown.addEventListener('mouseleave', () => {
+                    dropdown.classList.remove('is-open');
+                });
+            });
+
+            // Mobile Accordions
+            document.querySelectorAll('.hms-med-mobile-dropdown').forEach(dropdown => {
+                const btn = dropdown.querySelector('.hms-med-mobile-dropdown-btn');
+                const content = dropdown.querySelector('.hms-med-mobile-dropdown-content');
+                btn.addEventListener('click', () => {
+                    const isOpen = content.classList.contains('is-open');
+                    content.classList.toggle('is-open', !isOpen);
+                    btn.setAttribute('aria-expanded', !isOpen);
+                });
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.hms-med-nav-dropdown.is-open, .hms-med-profile-dropdown.is-open').forEach(el => {
+                    el.classList.remove('is-open');
+                });
+            });
+
             // Global logout handler to clear chat history
-            document.querySelectorAll('.hms-med-logout').forEach(btn => {
+            document.querySelectorAll('.hms-med-logout, .hms-logout-link').forEach(btn => {
                 btn.addEventListener('click', function() {
                     sessionStorage.removeItem('hms_chat_history');
                 });
