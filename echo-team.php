@@ -267,82 +267,102 @@ session_start();
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-                
+
                 <!-- Zeyad Yasser -->
                 <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-indigo-50 flex items-center justify-center mb-6 text-indigo-600 border-4 border-white shadow-inner">
-                        <span class="font-black text-4xl">ZY</span>
+                    <a href="#" target="_blank" rel="noopener" class="block">
+                        <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-indigo-50">
+                            <img src="/assets/images/Team/Zeyad.png" alt="Zeyad Yasser" class="w-full h-full object-cover object-top">
+                        </div>
+                    </a>
+                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-indigo-50 ring-1 ring-indigo-200">
+                        <h3 class="text-lg font-black text-indigo-700 tracking-tight">Zeyad Yasser</h3>
                     </div>
-                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Zeyad Yasser</h3>
-                    <p class="text-indigo-600 font-bold text-sm uppercase tracking-wider mb-6">Full Stack & Team Leader</p>
+                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Full Stack & Team Leader</p>
                     <div class="flex justify-center gap-4">
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
                     </div>
                 </div>
 
-                <!-- AbdEl-Rahman Gamal -->
+                <!-- AbdEl-Rahman Gamal (no photo yet) -->
                 <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-blue-50 flex items-center justify-center mb-6 text-blue-600 border-4 border-white shadow-inner">
-                        <span class="font-black text-4xl">AG</span>
+                    <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-blue-50 flex items-center justify-center text-blue-300">
+                        <i class="bi bi-person-fill" style="font-size: 4rem;"></i>
                     </div>
-                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">AbdEl-Rahman Gamal</h3>
-                    <p class="text-blue-600 font-bold text-sm uppercase tracking-wider mb-6">Back-End Developer & DB</p>
+                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-blue-50 ring-1 ring-blue-200">
+                        <h3 class="text-lg font-black text-blue-700 tracking-tight">AbdEl-Rahman Gamal</h3>
+                    </div>
+                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Back-End Developer & DB</p>
                     <div class="flex justify-center gap-4">
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
                     </div>
                 </div>
 
                 <!-- Amnaa Mohamed -->
                 <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-purple-50 flex items-center justify-center mb-6 text-purple-600 border-4 border-white shadow-inner">
-                        <span class="font-black text-4xl">AM</span>
+                    <a href="#" target="_blank" rel="noopener" class="block">
+                        <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-purple-50">
+                            <img src="/assets/images/Team/Amnaa.jpeg" alt="Amnaa Mohamed" class="w-full h-full object-cover object-top">
+                        </div>
+                    </a>
+                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-purple-50 ring-1 ring-purple-200">
+                        <h3 class="text-lg font-black text-purple-700 tracking-tight">Amnaa Mohamed</h3>
                     </div>
-                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Amnaa Mohamed</h3>
-                    <p class="text-purple-600 font-bold text-sm uppercase tracking-wider mb-6">Back-End Developer & DB</p>
+                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Back-End Developer & DB</p>
                     <div class="flex justify-center gap-4">
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
                     </div>
                 </div>
 
                 <!-- Nada Taha -->
                 <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-rose-50 flex items-center justify-center mb-6 text-rose-600 border-4 border-white shadow-inner">
-                        <span class="font-black text-4xl">NT</span>
+                    <a href="#" target="_blank" rel="noopener" class="block">
+                        <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-rose-50">
+                            <img src="/assets/images/Team/Nada.jpeg" alt="Nada Taha" class="w-full h-full object-cover object-top">
+                        </div>
+                    </a>
+                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-rose-50 ring-1 ring-rose-200">
+                        <h3 class="text-lg font-black text-rose-700 tracking-tight">Nada Taha</h3>
                     </div>
-                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Nada Taha</h3>
-                    <p class="text-rose-600 font-bold text-sm uppercase tracking-wider mb-6">Front-End Developer</p>
+                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Front-End Developer</p>
                     <div class="flex justify-center gap-4">
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
                     </div>
                 </div>
 
                 <!-- Aya Shapan -->
                 <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-pink-50 flex items-center justify-center mb-6 text-pink-600 border-4 border-white shadow-inner">
-                        <span class="font-black text-4xl">AS</span>
+                    <a href="#" target="_blank" rel="noopener" class="block">
+                        <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-pink-50">
+                            <img src="/assets/images/Team/Aya.jpeg" alt="Aya Shapan" class="w-full h-full object-cover object-top">
+                        </div>
+                    </a>
+                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-pink-50 ring-1 ring-pink-200">
+                        <h3 class="text-lg font-black text-pink-700 tracking-tight">Aya Shapan</h3>
                     </div>
-                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Aya Shapan</h3>
-                    <p class="text-pink-600 font-bold text-sm uppercase tracking-wider mb-6">Front-End Developer</p>
+                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Front-End Developer</p>
                     <div class="flex justify-center gap-4">
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
                     </div>
                 </div>
 
-                <!-- Mohamed Ahmed -->
+                <!-- Mohamed Ahmed (no photo yet) -->
                 <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <div class="avatar-container w-32 h-32 mx-auto rounded-full bg-emerald-50 flex items-center justify-center mb-6 text-emerald-600 border-4 border-white shadow-inner">
-                        <span class="font-black text-4xl">MA</span>
+                    <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-emerald-50 flex items-center justify-center text-emerald-300">
+                        <i class="bi bi-person-fill" style="font-size: 4rem;"></i>
                     </div>
-                    <h3 class="text-2xl font-black text-gray-900 mb-1 tracking-tight">Mohamed Ahmed</h3>
-                    <p class="text-emerald-600 font-bold text-sm uppercase tracking-wider mb-6">Front-End & Documentation</p>
+                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-200">
+                        <h3 class="text-lg font-black text-emerald-700 tracking-tight">Mohamed Ahmed</h3>
+                    </div>
+                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Front-End Developer</p>
                     <div class="flex justify-center gap-4">
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
+                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
                     </div>
                 </div>
 
