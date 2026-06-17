@@ -345,6 +345,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $specs = $connect->query("SELECT specilization FROM doctorspecilization ORDER BY specilization");
+
+// Preload ALL doctors grouped by specialization into PHP array
+$allDocsRes = $connect->query("SELECT id, doctorName, docFees, specilization FROM doctors ORDER BY doctorName");
+$doctorsBySpec = [];
+while ($d = $allDocsRes->fetch_assoc()) {
+    $doctorsBySpec[$d['specilization']][] = [
+        'id'    => (int)$d['id'],
+        'name'  => $d['doctorName'],
+        'fees'  => (int)$d['docFees'],
+    ];
+}
+
+// Current appointment doctor spec (from doctors table directly — most reliable)
+$currentSpec = $appt['docSpec'] ?? $appt['doctorSpecialization'] ?? '';
+$currentDocId = (int)$appt['doctorId'];
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>" dir="<?= $dir ?>" data-theme="<?= $theme ?>">
@@ -392,7 +407,7 @@ $specs = $connect->query("SELECT specilization FROM doctorspecilization ORDER BY
                 <select id="sel_spec" class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:outline-none">
                     <option value="">Select specialization</option>
                     <?php while ($spec = $specs->fetch_assoc()): ?>
-                        <option value="<?= htmlspecialchars($spec['specilization']) ?>" <?= $spec['specilization'] === $appt['doctorSpecialization'] ? 'selected' : '' ?>>
+                        <option value="<?= htmlspecialchars($spec['specilization']) ?>" <?= $spec['specilization'] === $currentSpec ? 'selected' : '' ?>>
                             <?= htmlspecialchars($spec['specilization']) ?>
                         </option>
                     <?php endwhile; ?>
@@ -401,7 +416,9 @@ $specs = $connect->query("SELECT specilization FROM doctorspecilization ORDER BY
 
             <div class="mb-4">
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Doctor</label>
-                <select id="sel_doc" name="doctorId" required class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:outline-none"></select>
+                <select id="sel_doc" name="doctorId" required class="w-full border-2 border-gray-200 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:outline-none">
+                    <option value="">Loading...</option>
+                </select>
             </div>
 
             <div class="mb-4">
@@ -450,50 +467,46 @@ $specs = $connect->query("SELECT specilization FROM doctorspecilization ORDER BY
     </div>
 
     <script>
-        const doctorSelect = document.getElementById('sel_doc');
+        // All doctors preloaded from PHP — no AJAX needed
+        const doctorsBySpec = <?= json_encode($doctorsBySpec, JSON_UNESCAPED_UNICODE) ?>;
+        const selectedDoctorId = <?= $currentDocId ?>;
+        const currentSpec     = <?= json_encode($currentSpec) ?>;
+
+        const doctorSelect       = document.getElementById('sel_doc');
         const specializationSelect = document.getElementById('sel_spec');
-        const feesDisplay = document.getElementById('fees_display');
-        const selectedDoctorId = <?= (int)$appt['doctorId'] ?>;
+        const feesDisplay        = document.getElementById('fees_display');
+
+        function populateDoctors(spec, preferDoctorId) {
+            const doctors = doctorsBySpec[spec] || [];
+            if (!spec || doctors.length === 0) {
+                doctorSelect.innerHTML = '<option value="">No doctors for this specialization</option>';
+                feesDisplay.value = '';
+                return;
+            }
+            let html = '<option value="">Select doctor</option>';
+            doctors.forEach(d => {
+                const sel = d.id === preferDoctorId ? ' selected' : '';
+                html += `<option value="${d.id}" data-fees="${d.fees}"${sel}>${d.name}</option>`;
+            });
+            doctorSelect.innerHTML = html;
+            refreshFees();
+            loadEditSlots();
+        }
 
         function refreshFees() {
-            const current = doctorSelect.options[doctorSelect.selectedIndex];
-            feesDisplay.value = current ? (current.dataset.fees || '') : '';
+            const opt = doctorSelect.options[doctorSelect.selectedIndex];
+            feesDisplay.value = opt ? (opt.dataset.fees || '') : '';
         }
 
-        function loadDoctors(spec, preferredDoctorId = null) {
-            const body = new URLSearchParams();
-            body.set('specilizationid', spec);
-
-            fetch('/modules/user/get_doctor.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                },
-                body: body.toString()
-            })
-            .then(response => response.text())
-            .then(html => {
-                doctorSelect.innerHTML = html;
-                const options = Array.from(doctorSelect.options);
-                const targetOption = options.find(option => String(option.value) === String(preferredDoctorId));
-                if (targetOption) {
-                    targetOption.selected = true;
-                }
-                refreshFees();
-            })
-            .catch(() => {
-                doctorSelect.innerHTML = '<option value="">Unable to load doctors</option>';
-                feesDisplay.value = '';
-            });
-        }
-
+        // Populate on spec change
         specializationSelect.addEventListener('change', function () {
-            loadDoctors(this.value, null);
+            populateDoctors(this.value, null);
         });
 
-        doctorSelect.addEventListener('change', refreshFees);
+        doctorSelect.addEventListener('change', () => { refreshFees(); loadEditSlots(); });
 
-        loadDoctors(specializationSelect.value, selectedDoctorId);
+        // Populate on page load with the current doctor pre-selected
+        populateDoctors(currentSpec, selectedDoctorId);
 
         // ===== Availability slot loading for Edit form =====
         function loadEditSlots() {

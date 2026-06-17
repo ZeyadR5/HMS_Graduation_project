@@ -45,7 +45,7 @@ session_start();
 
         .avatar-container { position: relative; }
         .avatar-container::after {
-            content: ''; position: absolute; inset: -4px; border-radius: 50%;
+            content: ''; position: absolute; inset: -4px; border-radius: 16px;
             background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
             z-index: -1; opacity: 0; transition: opacity 0.3s ease;
         }
@@ -57,6 +57,47 @@ session_start();
             100% { transform: translateY(0px); }
         }
         .floating-icon { animation: float 6s ease-in-out infinite; }
+
+        /* ── Flip Card ── */
+        .flip-card { perspective: 1200px; cursor: pointer; position: relative; }
+        .flip-card-inner {
+            width: 100%; height: 500px; position: relative;
+            transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+            will-change: transform;
+        }
+        .flip-card.flipped { z-index: 20; }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back {
+            position: absolute; inset: 0; border-radius: 1.5rem;
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            overflow: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+        .flip-card-front {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.08);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg) translateZ(0);
+            -webkit-transform: rotateY(180deg) translateZ(0);
+            background: #fff;
+            box-shadow: 0 25px 50px -12px rgba(79,70,229,0.2);
+        }
+        .back-link {
+            display: flex; align-items: center; gap: 10px; padding: 5px 10px;
+            border-radius: 12px; text-decoration: none; color: #374151;
+            font-weight: 600; font-size: 0.875rem; transition: background 0.2s;
+        }
+        .back-link:hover { background: #f9fafb; color: #1f2937; }
+        .back-link-icon {
+            width: 30px; height: 30px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
     </style>
 </head>
 <body class="antialiased selection:bg-indigo-500 selection:text-white hero-bg">
@@ -266,107 +307,277 @@ session_start();
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12" style="overflow:visible;">
 
                 <!-- Zeyad Yasser -->
-                <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <a href="#" target="_blank" rel="noopener" class="block">
-                        <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-indigo-50">
-                            <img src="/assets/images/Team/Zeyad.png" alt="Zeyad Yasser" class="w-full h-full object-cover object-top">
+                <div class="flip-card" onclick="flipCard(this)">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front text-center">
+                      <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-indigo-50" style="width:190px;height:270px;">
+                        <img src="/assets/images/Team/Zeyad.png" alt="Zeyad Yasser" class="w-full h-full object-contain">
+                      </div>
+                      <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-indigo-50 ring-1 ring-indigo-200">
+                        <h3 class="text-lg font-black text-indigo-700">Zeyad Yasser</h3>
+                      </div>
+                      <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2">Full Stack &amp; Team Leader</p>
+                      <!-- <p class="text-gray-300 text-xs mt-4"><i class="bi bi-arrow-repeat mr-1"></i>Click to flip</p> -->
+                    </div>
+                    <div class="flip-card-back">
+                      <div class="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                      <div class="p-4">
+                        <div class="flex justify-between items-center mb-2">
+                          <img src="/assets/images/echol.png" alt="Echo" style="height:36px;">
+                          <span class="text-xs text-gray-400 font-bold uppercase tracking-wide">HMS Project</span>
                         </div>
-                    </a>
-                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-indigo-50 ring-1 ring-indigo-200">
-                        <h3 class="text-lg font-black text-indigo-700 tracking-tight">Zeyad Yasser</h3>
+                        <div class="flex flex-col items-center mb-2">
+                          <div class="rounded-2xl overflow-hidden border-4 border-indigo-100 shadow-md" style="width:130px;height:170px;">
+                            <img src="/assets/images/Team/Zeyad.png" class="w-full h-full object-contain">
+                          </div>
+                          <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">Zeyad Yaser Abdallah</h3>
+                          <p class="text-indigo-600 font-bold text-xs">Team Leader</p>
+                          <p class="text-gray-400 text-xs">Full Stack Developer</p>
+                        </div>
+                        <div class="border-t border-gray-100 pt-2">
+                          <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                          <a href="https://web.whatsapp.com/send/?phone=%2B201024474059&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+201024474059
+                          </a>
+                          <a href="https://github.com/zeyadi9/" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-gray-100"><i class="bi bi-github text-gray-800"></i></div>zeyadi9
+                          </a>
+                          <a href="https://www.linkedin.com/in/zeyad-yasser-213312297?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-blue-100"><i class="bi bi-linkedin text-blue-600"></i></div>Zeyad Yasser
+                          </a>
+                          <a href="https://zeyadi9.github.io/Portfolio/" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-indigo-100"><i class="bi bi-globe2 text-indigo-600"></i></div>Portfolio
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Full Stack & Team Leader</p>
-                    <div class="flex justify-center gap-4">
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
-                    </div>
+                  </div>
                 </div>
 
-                <!-- AbdEl-Rahman Gamal (no photo yet) -->
-                <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-blue-50 flex items-center justify-center text-blue-300">
-                        <i class="bi bi-person-fill" style="font-size: 4rem;"></i>
+                <!-- AbdEl-Rahman Gamal -->
+                <div class="flip-card" onclick="flipCard(this)">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front text-center">
+                      <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-blue-50" style="width:190px;height:270px;">
+                        <img src="/assets/images/Team/Abdulrahman.jpeg" alt="AbdEl-Rahman Gamal" class="w-full h-full object-contain">
+                      </div>
+                      <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-blue-50 ring-1 ring-blue-200">
+                        <h3 class="text-lg font-black text-blue-700">Abdelrahman Gamal</h3>
+                      </div>
+                      <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2">Back-End Developer &amp; DB</p>
+                      <!-- <p class="text-gray-300 text-xs mt-4"><i class="bi bi-arrow-repeat mr-1"></i>Click to flip</p> -->
                     </div>
-                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-blue-50 ring-1 ring-blue-200">
-                        <h3 class="text-lg font-black text-blue-700 tracking-tight">AbdEl-Rahman Gamal</h3>
+                    <div class="flip-card-back">
+                      <div class="h-2 bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500"></div>
+                      <div class="p-4">
+                        <div class="flex justify-between items-center mb-2">
+                          <img src="/assets/images/echol.png" alt="Echo" style="height:36px;">
+                          <span class="text-xs text-gray-400 font-bold uppercase tracking-wide">HMS Project</span>
+                        </div>
+                        <div class="flex flex-col items-center mb-2">
+                          <div class="rounded-2xl overflow-hidden border-4 border-blue-100 shadow-md" style="width:130px;height:170px;">
+                            <img src="/assets/images/Team/Abdulrahman.jpeg" class="w-full h-full object-contain">
+                          </div>
+                          <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">AbdEl-Rahman Gamal</h3>
+                          <p class="text-blue-600 font-bold text-xs">Back-End Developer</p>
+                          <p class="text-gray-400 text-xs">Database Engineer</p>
+                        </div>
+                        <div class="border-t border-gray-100 pt-2">
+                          <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                          <a href="https://web.whatsapp.com/send/?phone=%2B201011923048&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+201011923048
+                          </a>
+                          <a href="https://github.com/Abdog210/" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-gray-100"><i class="bi bi-github text-gray-800"></i></div>Abdog210
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Back-End Developer & DB</p>
-                    <div class="flex justify-center gap-4">
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
-                    </div>
+                  </div>
                 </div>
 
                 <!-- Amnaa Mohamed -->
-                <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <a href="#" target="_blank" rel="noopener" class="block">
-                        <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-purple-50">
-                            <img src="/assets/images/Team/Amnaa.jpeg" alt="Amnaa Mohamed" class="w-full h-full object-cover object-top">
+                <div class="flip-card" onclick="flipCard(this)">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front text-center">
+                      <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-purple-50" style="width:190px;height:270px;">
+                        <img src="/assets/images/Team/Amnaa.jpeg" alt="Amnaa Mohamed" class="w-full h-full object-contain">
+                      </div>
+                      <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-purple-50 ring-1 ring-purple-200">
+                        <h3 class="text-lg font-black text-purple-700">Amnaa Mohamed</h3>
+                      </div>
+                      <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2">Back-End Developer &amp; DB</p>
+                      <!-- <p class="text-gray-300 text-xs mt-4"><i class="bi bi-arrow-repeat mr-1"></i>Click to flip</p> -->
+                    </div>
+                    <div class="flip-card-back">
+                      <div class="h-2 bg-gradient-to-r from-purple-400 via-purple-500 to-pink-500"></div>
+                      <div class="p-4">
+                        <div class="flex justify-between items-center mb-2">
+                          <img src="/assets/images/echol.png" alt="Echo" style="height:36px;">
+                          <span class="text-xs text-gray-400 font-bold uppercase tracking-wide">HMS Project</span>
                         </div>
-                    </a>
-                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-purple-50 ring-1 ring-purple-200">
-                        <h3 class="text-lg font-black text-purple-700 tracking-tight">Amnaa Mohamed</h3>
+                        <div class="flex flex-col items-center mb-2">
+                          <div class="rounded-2xl overflow-hidden border-4 border-purple-100 shadow-md" style="width:130px;height:170px;">
+                            <img src="/assets/images/Team/Amnaa.jpeg" class="w-full h-full object-contain">
+                          </div>
+                          <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">Amnaa Mohamed</h3>
+                          <p class="text-purple-600 font-bold text-xs">Back-End Developer</p>
+                          <p class="text-gray-400 text-xs">Database Engineer</p>
+                        </div>
+                        <div class="border-t border-gray-100 pt-2">
+                          <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                          <a href="https://web.whatsapp.com/send/?phone=%2B20127977721&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+20127977721
+                          </a>
+                          <a href="https://www.linkedin.com/in/amnaa-salah-b3a28936b?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-blue-100"><i class="bi bi-linkedin text-blue-600"></i></div>Amnaa Salah
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Back-End Developer & DB</p>
-                    <div class="flex justify-center gap-4">
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
-                    </div>
+                  </div>
                 </div>
 
                 <!-- Nada Taha -->
-                <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <a href="#" target="_blank" rel="noopener" class="block">
-                        <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-rose-50">
-                            <img src="/assets/images/Team/Nada.jpeg" alt="Nada Taha" class="w-full h-full object-cover object-top">
+                <div class="flip-card" onclick="flipCard(this)">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front text-center">
+                      <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-rose-50" style="width:190px;height:270px;">
+                        <img src="/assets/images/Team/Nada.jpeg" alt="Nada Taha" class="w-full h-full object-contain">
+                      </div>
+                      <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-rose-50 ring-1 ring-rose-200">
+                        <h3 class="text-lg font-black text-rose-700">Nada Taha</h3>
+                      </div>
+                      <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2">Front-End Developer</p>
+                      <!-- <p class="text-gray-300 text-xs mt-4"><i class="bi bi-arrow-repeat mr-1"></i>Click to flip</p> -->
+                    </div>
+                    <div class="flip-card-back">
+                      <div class="h-2 bg-gradient-to-r from-rose-400 via-rose-500 to-orange-400"></div>
+                      <div class="p-4">
+                        <div class="flex justify-between items-center mb-2">
+                          <img src="/assets/images/echol.png" alt="Echo" style="height:36px;">
+                          <span class="text-xs text-gray-400 font-bold uppercase tracking-wide">HMS Project</span>
                         </div>
-                    </a>
-                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-rose-50 ring-1 ring-rose-200">
-                        <h3 class="text-lg font-black text-rose-700 tracking-tight">Nada Taha</h3>
+                        <div class="flex flex-col items-center mb-2">
+                          <div class="rounded-2xl overflow-hidden border-4 border-rose-100 shadow-md" style="width:130px;height:170px;">
+                            <img src="/assets/images/Team/Nada.jpeg" class="w-full h-full object-contain">
+                          </div>
+                          <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">Nada Taha</h3>
+                          <p class="text-rose-600 font-bold text-xs">Front-End Developer</p>
+                          <p class="text-gray-400 text-xs">UI / UX</p>
+                        </div>
+                        <div class="border-t border-gray-100 pt-2">
+                          <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                          <a href="https://web.whatsapp.com/send/?phone=%2B201144047035&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+201144047035
+                          </a>
+                          <a href="https://github.com/nadatahanadataha098-dotcom/" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-gray-100"><i class="bi bi-github text-gray-800"></i></div>nadataha098
+                          </a>
+                          <a href="https://www.linkedin.com/in/nada-taha-123b13261" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-blue-100"><i class="bi bi-linkedin text-blue-600"></i></div>Nada Taha
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Front-End Developer</p>
-                    <div class="flex justify-center gap-4">
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
-                    </div>
+                  </div>
                 </div>
 
                 <!-- Aya Shapan -->
-                <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <a href="#" target="_blank" rel="noopener" class="block">
-                        <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-pink-50">
-                            <img src="/assets/images/Team/Aya.jpeg" alt="Aya Shapan" class="w-full h-full object-cover object-top">
+                <div class="flip-card" onclick="flipCard(this)">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front text-center">
+                      <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-pink-50" style="width:190px;height:270px;">
+                        <img src="/assets/images/Team/Aya.jpeg" alt="Aya Shapan" class="w-full h-full object-contain">
+                      </div>
+                      <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-pink-50 ring-1 ring-pink-200">
+                        <h3 class="text-lg font-black text-pink-700">Aya Shapan</h3>
+                      </div>
+                      <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2">Front-End Developer</p>
+                      <!-- <p class="text-gray-300 text-xs mt-4"><i class="bi bi-arrow-repeat mr-1"></i>Click to flip</p> -->
+                    </div>
+                    <div class="flip-card-back">
+                      <div class="h-2 bg-gradient-to-r from-pink-400 via-pink-500 to-rose-400"></div>
+                      <div class="p-4">
+                        <div class="flex justify-between items-center mb-2">
+                          <img src="/assets/images/echol.png" alt="Echo" style="height:36px;">
+                          <span class="text-xs text-gray-400 font-bold uppercase tracking-wide">HMS Project</span>
                         </div>
-                    </a>
-                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-pink-50 ring-1 ring-pink-200">
-                        <h3 class="text-lg font-black text-pink-700 tracking-tight">Aya Shapan</h3>
+                        <div class="flex flex-col items-center mb-2">
+                          <div class="rounded-2xl overflow-hidden border-4 border-pink-100 shadow-md" style="width:130px;height:170px;">
+                            <img src="/assets/images/Team/Aya.jpeg" class="w-full h-full object-contain">
+                          </div>
+                          <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">Aya Shapan</h3>
+                          <p class="text-pink-600 font-bold text-xs">Front-End Developer</p>
+                          <p class="text-gray-400 text-xs">UI / UX</p>
+                        </div>
+                        <div class="border-t border-gray-100 pt-2">
+                          <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                          <a href="https://web.whatsapp.com/send/?phone=%2B201101675105&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+201101675105
+                          </a>
+                          <a href="https://github.com/AyaShaban1/" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-gray-100"><i class="bi bi-github text-gray-800"></i></div>AyaShaban1
+                          </a>
+                          <a href="https://www.linkedin.com/in/aya-shaban-792a98335?utm_source=share_via&utm_content=profile&utm_medium=member_ios" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-blue-100"><i class="bi bi-linkedin text-blue-600"></i></div>Aya Shaban
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Front-End Developer</p>
-                    <div class="flex justify-center gap-4">
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
-                    </div>
+                  </div>
                 </div>
 
-                <!-- Mohamed Ahmed (no photo yet) -->
-                <div class="team-card rounded-3xl p-8 text-center shadow-lg bg-white/60">
-                    <div class="avatar-container w-36 h-36 mx-auto rounded-full border-4 border-white shadow-lg mb-0 overflow-hidden bg-emerald-50 flex items-center justify-center text-emerald-300">
-                        <i class="bi bi-person-fill" style="font-size: 4rem;"></i>
+                <!-- Mohamed Ahmed -->
+                <div class="flip-card" onclick="flipCard(this)">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front text-center">
+                      <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-emerald-50" style="width:190px;height:270px;">
+                        <img src="/assets/images/Team/Mohamed.jpeg" alt="Mohamed Ahmed" class="w-full h-full object-contain">
+                      </div>
+                      <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-200">
+                        <h3 class="text-lg font-black text-emerald-700">Mohamed Ahmed</h3>
+                      </div>
+                      <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2">Front-End Developer</p>
+                      <!-- <p class="text-gray-300 text-xs mt-4"><i class="bi bi-arrow-repeat mr-1"></i>Click to flip</p> -->
                     </div>
-                    <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-emerald-50 ring-1 ring-emerald-200">
-                        <h3 class="text-lg font-black text-emerald-700 tracking-tight">Mohamed Ahmed</h3>
+                    <div class="flip-card-back">
+                      <div class="h-2 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500"></div>
+                      <div class="p-4">
+                        <div class="flex justify-between items-center mb-2">
+                          <img src="/assets/images/echol.png" alt="Echo" style="height:36px;">
+                          <span class="text-xs text-gray-400 font-bold uppercase tracking-wide">HMS Project</span>
+                        </div>
+                        <div class="flex flex-col items-center mb-2">
+                          <div class="rounded-2xl overflow-hidden border-4 border-emerald-100 shadow-md" style="width:130px;height:170px;">
+                            <img src="/assets/images/Team/Mohamed.jpeg" class="w-full h-full object-contain">
+                          </div>
+                          <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">Mohamed Ahmed</h3>
+                          <p class="text-emerald-600 font-bold text-xs">Front-End Developer</p>
+                          <p class="text-gray-400 text-xs">UI / UX</p>
+                        </div>
+                        <div class="border-t border-gray-100 pt-2">
+                          <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                          <a href="https://web.whatsapp.com/send/?phone=%2B201116584349&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+201116584349
+                          </a>
+                          <a href="https://github.com/mohamedahmed17122004-ai" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-gray-100"><i class="bi bi-github text-gray-800"></i></div>mohamedahmed
+                          </a>
+                          <a href="https://www.linkedin.com/in/mohamed-rabea-69099726a/" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-blue-100"><i class="bi bi-linkedin text-blue-600"></i></div>Mohamed Rabea
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                    <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2 mb-5">Front-End Developer</p>
-                    <div class="flex justify-center gap-4">
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 shadow hover:shadow-md transition-all"><i class="bi bi-github text-lg"></i></a>
-                        <a href="#" target="_blank" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-blue-600 shadow hover:shadow-md transition-all"><i class="bi bi-linkedin text-lg"></i></a>
-                    </div>
+                  </div>
                 </div>
 
             </div>
+
         </div>
     </section>
 
@@ -389,6 +600,14 @@ session_start();
     </footer>
 
     <script>
+        // Flip card function
+        function flipCard(card) {
+            document.querySelectorAll('.flip-card.flipped').forEach(c => {
+                if (c !== card) c.classList.remove('flipped');
+            });
+            card.classList.toggle('flipped');
+        }
+
         // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
