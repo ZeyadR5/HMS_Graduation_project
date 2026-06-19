@@ -309,7 +309,50 @@ session_start();
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12" style="overflow:visible;">
 
-                <!-- Zeyad Yasser -->
+                <!-- AbdEl-Rahman Gamal -->
+                <div class="flip-card" onclick="flipCard(this)">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front text-center">
+                      <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-blue-50" style="width:190px;height:270px;">
+                        <img src="/assets/images/Team/Abdulrahman.jpeg" alt="AbdEl-Rahman Gamal" class="w-full h-full object-contain">
+                      </div>
+                      <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-blue-50 ring-1 ring-blue-200">
+                        <h3 class="text-lg font-black text-blue-700">Abdelrahman Gamal</h3>
+                      </div>
+                      <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2">Back-End Developer</p>
+                      <!-- <p class="text-gray-300 text-xs mt-4"><i class="bi bi-arrow-repeat mr-1"></i>Click to flip</p> -->
+                    </div>
+                    <div class="flip-card-back">
+                      <div class="h-2 bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500"></div>
+                      <div class="p-4">
+                        <div class="flex justify-between items-center mb-2">
+                          <img src="/assets/images/echol.png" alt="Echo" style="height:36px;">
+                          <span class="text-xs text-gray-400 font-bold uppercase tracking-wide">HMS Project</span>
+                        </div>
+                        <div class="flex flex-col items-center mb-2">
+                          <div class="rounded-2xl overflow-hidden border-4 border-blue-100 shadow-md" style="width:130px;height:170px;">
+                            <img src="/assets/images/Team/Abdulrahman.jpeg" class="w-full h-full object-contain">
+                          </div>
+                          <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">AbdEl-Rahman Gamal</h3>
+                          <p class="text-blue-600 font-bold text-xs">Back-End Developer</p>
+                          <!-- <p class="text-gray-400 text-xs">Database Engineer</p> -->
+                        </div>
+                        <div class="border-t border-gray-100 pt-2">
+                          <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                          <a href="https://web.whatsapp.com/send/?phone=%2B201011923048&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+201011923048
+                          </a>
+                          <a href="https://github.com/Abdog210/" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-gray-100"><i class="bi bi-github text-gray-800"></i></div>Abdog210
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+                                <!-- Zeyad Yasser -->
                 <div class="flip-card" onclick="flipCard(this)">
                   <div class="flip-card-inner">
                     <div class="flip-card-front text-center">
@@ -350,48 +393,6 @@ session_start();
                           </a>
                           <a href="https://zeyadi9.github.io/Portfolio/" onclick="event.stopPropagation()" target="_blank" class="back-link">
                             <div class="back-link-icon bg-indigo-100"><i class="bi bi-globe2 text-indigo-600"></i></div>Portfolio
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- AbdEl-Rahman Gamal -->
-                <div class="flip-card" onclick="flipCard(this)">
-                  <div class="flip-card-inner">
-                    <div class="flip-card-front text-center">
-                      <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-blue-50" style="width:190px;height:270px;">
-                        <img src="/assets/images/Team/Abdulrahman.jpeg" alt="AbdEl-Rahman Gamal" class="w-full h-full object-contain">
-                      </div>
-                      <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-blue-50 ring-1 ring-blue-200">
-                        <h3 class="text-lg font-black text-blue-700">Abdelrahman Gamal</h3>
-                      </div>
-                      <p class="text-gray-500 font-semibold text-xs uppercase tracking-wider mt-2">Back-End Developer &amp; DB</p>
-                      <!-- <p class="text-gray-300 text-xs mt-4"><i class="bi bi-arrow-repeat mr-1"></i>Click to flip</p> -->
-                    </div>
-                    <div class="flip-card-back">
-                      <div class="h-2 bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500"></div>
-                      <div class="p-4">
-                        <div class="flex justify-between items-center mb-2">
-                          <img src="/assets/images/echol.png" alt="Echo" style="height:36px;">
-                          <span class="text-xs text-gray-400 font-bold uppercase tracking-wide">HMS Project</span>
-                        </div>
-                        <div class="flex flex-col items-center mb-2">
-                          <div class="rounded-2xl overflow-hidden border-4 border-blue-100 shadow-md" style="width:130px;height:170px;">
-                            <img src="/assets/images/Team/Abdulrahman.jpeg" class="w-full h-full object-contain">
-                          </div>
-                          <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">AbdEl-Rahman Gamal</h3>
-                          <p class="text-blue-600 font-bold text-xs">Back-End Developer</p>
-                          <p class="text-gray-400 text-xs">Database Engineer</p>
-                        </div>
-                        <div class="border-t border-gray-100 pt-2">
-                          <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
-                          <a href="https://web.whatsapp.com/send/?phone=%2B201011923048&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
-                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+201011923048
-                          </a>
-                          <a href="https://github.com/Abdog210/" onclick="event.stopPropagation()" target="_blank" class="back-link">
-                            <div class="back-link-icon bg-gray-100"><i class="bi bi-github text-gray-800"></i></div>Abdog210
                           </a>
                         </div>
                       </div>
@@ -578,6 +579,84 @@ session_start();
 
             </div>
 
+        </div>
+    </section>
+
+    <!-- Project Supervisor Section -->
+    <section class="py-20 bg-amber-50/50 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(251,191,36,0.1),transparent_60%)]"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-14">
+                <span class="px-4 py-1.5 rounded-full bg-amber-100 text-amber-700 font-bold text-sm tracking-widest uppercase mb-4 inline-block ring-1 ring-amber-200">
+                    <i class="bi bi-mortarboard-fill mr-1"></i> Academic Supervision
+                </span>
+                <h2 class="mt-4 text-3xl font-black tracking-tight text-gray-900">Project <span style="background:linear-gradient(135deg,#d97706,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Supervisor</span></h2>
+                <p class="mt-3 text-gray-500 font-medium">Under the academic guidance and supervision of</p>
+            </div>
+
+            <div class="flex justify-center">
+                <div class="bg-white rounded-3xl shadow-xl border border-amber-100 p-8 flex flex-col sm:flex-row items-center gap-8 max-w-xl w-full hover:shadow-2xl transition-all duration-300">
+                    <!-- Avatar -->
+                    <div class="rounded-2xl overflow-hidden flex-shrink-0 border-4 border-white ring-4 ring-amber-100 shadow-lg" style="width:140px;height:175px;">
+                        <img src="/assets/images/Team/Sara 3.jpeg" alt="Dr. Sara" class="w-full h-full object-cover object-top">
+                    </div>
+                    <!-- Info -->
+                    <div class="text-center sm:text-left">
+                        <span class="inline-block px-3 py-1 rounded-full bg-amber-50 ring-1 ring-amber-200 text-amber-700 text-xs font-bold uppercase tracking-widest mb-3">
+                            Project Supervisor
+                        </span>
+                        <h3 class="text-2xl font-black text-gray-900 mb-1">Dr. Sara</h3>
+                        <p class="text-amber-600 font-semibold text-sm">Academic Supervisor — HMS Project</p>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">Provided academic guidance and oversight throughout the development of the HMS graduation project.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Special Thanks Section -->
+    <section class="py-20 bg-slate-50 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.07),transparent_60%)]"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-14">
+                <span class="px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm tracking-widest uppercase mb-4 inline-block ring-1 ring-indigo-200">
+                    <i class="bi bi-stars mr-1"></i> Special Thanks
+                </span>
+                <h2 class="mt-4 text-3xl font-black tracking-tight text-gray-900">External <span class="gradient-text">Contributors</span></h2>
+                <p class="mt-3 text-gray-500 font-medium">Individuals outside the university who contributed their expertise to the project</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+
+                <!-- Hatem Ahmed — AI -->
+                <div class="bg-white rounded-3xl shadow-lg border border-teal-100 p-7 flex flex-col items-center text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div class="rounded-2xl overflow-hidden mb-5 border-4 border-white ring-4 ring-teal-100 shadow-lg" style="width:160px;height:200px;">
+                        <img src="/assets/images/Team/Hatem.jpeg" alt="Hatem Ahmed" class="w-full h-full object-contain">
+                    </div>
+                    <span class="inline-block px-3 py-1 rounded-full bg-teal-50 ring-1 ring-teal-200 text-teal-700 text-xs font-bold uppercase tracking-widest mb-3">
+                        AI Contribution
+                    </span>
+                    <h3 class="text-xl font-black text-gray-900 mb-1">Eng. Hatem Ahmed</h3>
+                    <p class="text-teal-600 font-semibold text-sm mb-3">AI Engineer</p>
+                    <div class="w-10 h-0.5 bg-teal-200 rounded-full mb-3"></div>
+                    <p class="text-gray-500 text-sm leading-relaxed">Contributed expertise in Artificial Intelligence, supporting the development and integration of the AI-powered triage and medical assistance features.</p>
+                </div>
+
+                <!-- Sara Nasr — Testing -->
+                <div class="bg-white rounded-3xl shadow-lg border border-violet-100 p-7 flex flex-col items-center text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div class="rounded-2xl overflow-hidden mb-5 border-4 border-white ring-4 ring-violet-100 shadow-lg" style="width:160px;height:200px;">
+                        <img src="/assets/images/Team/Sara 1.jpeg" alt="Sara Nasr" class="w-full h-full object-contain">
+                    </div>
+                    <span class="inline-block px-3 py-1 rounded-full bg-violet-50 ring-1 ring-violet-200 text-violet-700 text-xs font-bold uppercase tracking-widest mb-3">
+                        QA & Testing
+                    </span>
+                    <h3 class="text-xl font-black text-gray-900 mb-1">Eng. Sara Nasr</h3>
+                    <p class="text-violet-600 font-semibold text-sm mb-3">Software Tester</p>
+                    <div class="w-10 h-0.5 bg-violet-200 rounded-full mb-3"></div>
+                    <p class="text-gray-500 text-sm leading-relaxed">Conducted thorough software testing and quality assurance, ensuring system stability, performance, and reliability across all modules.</p>
+                </div>
+
+            </div>
         </div>
     </section>
 
