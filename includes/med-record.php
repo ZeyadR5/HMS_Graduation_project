@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/secure-token.php';
 /**
@@ -33,10 +33,34 @@ $searchWhere = $search ? "AND (
     OR appointment.patient_Num LIKE '%$search%'
 )" : '';
 
+// Count distinct matching rows
+$countQuery = mysqli_query(
+    $connect,
+    "SELECT COUNT(DISTINCT appointment.userId) as total
+     FROM appointment
+     LEFT JOIN users ON users.uid = appointment.userId
+     WHERE appointment.userStatus IN (1,2)
+       AND appointment.userId IS NOT NULL
+       AND appointment.userId <> 0
+     $whereExtra
+     $searchWhere"
+);
+$totalRows = 0;
+if ($countQuery) {
+    $totalRows = (int)($countQuery->fetch_assoc()['total'] ?? 0);
+}
+
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$perPage = 30;
+$totalPages = ceil($totalRows / $perPage);
+$offset = ($page - 1) * $perPage;
+
 $sql = mysqli_query(
     $connect,
-    "SELECT DISTINCT appointment.userId as uid,
-            COALESCE(users.fullName, appointment.patient_Name) as fullName
+    "SELECT appointment.userId as uid,
+            COALESCE(users.fullName, appointment.patient_Name) as fullName,
+            MAX(appointment.appointmentDate) as maxDate,
+            MAX(appointment.postingDate) as maxPostingDate
      FROM appointment
      LEFT JOIN users ON users.uid = appointment.userId
      WHERE appointment.userStatus IN (1,2)
@@ -44,7 +68,9 @@ $sql = mysqli_query(
        AND appointment.userId <> 0
      $whereExtra
      $searchWhere
-     ORDER BY postingDate DESC"
+     GROUP BY appointment.userId, COALESCE(users.fullName, appointment.patient_Name)
+     ORDER BY maxDate DESC, maxPostingDate DESC
+     LIMIT $perPage OFFSET $offset"
 );
 ?>
 <!DOCTYPE html>
@@ -53,10 +79,11 @@ $sql = mysqli_query(
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Record</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
 </head>
@@ -112,6 +139,40 @@ $sql = mysqli_query(
                 <?php endif; ?>
                 </tbody>
             </table>
+
+            <!-- Pagination UI -->
+            <?php if (isset($totalPages) && $totalPages > 1): ?>
+            <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
+                <div class="flex flex-1 justify-between sm:hidden">
+                    <?php if ($page > 1): ?>
+                        <a href="?q=<?= urlencode($search) ?>&page=<?= $page - 1 ?>" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Previous</a>
+                    <?php endif; ?>
+                    <?php if ($page < $totalPages): ?>
+                        <a href="?q=<?= urlencode($search) ?>&page=<?= $page + 1 ?>" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Next</a>
+                    <?php endif; ?>
+                </div>
+                <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700">
+                            Showing <span class="font-medium"><?= $offset + 1 ?></span> to <span class="font-medium"><?= min($offset + $perPage, $totalRows) ?></span> of <span class="font-medium"><?= $totalRows ?></span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <?php if ($page > 1): ?>
+                                <a href="?q=<?= urlencode($search) ?>&page=<?= $page - 1 ?>" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"><i class="bi bi-chevron-left"></i></a>
+                            <?php endif; ?>
+                            <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                                <a href="?q=<?= urlencode($search) ?>&page=<?= $p ?>" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold <?= $p === $page ? 'bg-blue-600 text-white' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50' ?>"><?= $p ?></a>
+                            <?php endfor; ?>
+                            <?php if ($page < $totalPages): ?>
+                                <a href="?q=<?= urlencode($search) ?>&page=<?= $page + 1 ?>" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"><i class="bi bi-chevron-right"></i></a>
+                            <?php endif; ?>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
         </div>
     </main>

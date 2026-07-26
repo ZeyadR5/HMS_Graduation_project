@@ -108,6 +108,8 @@ $data = [[
 ]];
 
 $pdf = new HmsReceiptPdf('P', 'mm', [105, 148]);
+$pdf->AddFont('Arial', '', 'arial.ttf', true);
+$pdf->AddFont('Arial', 'B', 'arialbd.ttf', true);
 $pdf->SetFont('Arial', '', 14);
 $pdf->AddPage();
 $pdf->FancyTable($header, $data);

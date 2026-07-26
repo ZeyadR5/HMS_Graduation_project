@@ -5,7 +5,9 @@ require_once __DIR__ . '/notification-api.php';
 $role = $_SESSION['role'] ?? '';
 $activePage = $activePage ?? '';
 $displayName = trim((string) ($_SESSION['username'] ?? 'Team Member'));
-$roleLabel = $role !== '' ? $role : 'Guest';
+// Display label only — 'User' shows as 'Reception' in UI (DB role value stays 'User')
+$roleLabelMap = ['User' => 'Reception'];
+$roleLabel = $roleLabelMap[$role] ?? ($role !== '' ? $role : 'Guest');
 $logoutHref = '/includes/logout.php';
 $logoHref = '/modules/dashboard.php';
 
@@ -158,7 +160,6 @@ switch ($role) {
             hms_nav_item('/includes/med-record.php', 'Medical Records', 'medical-record'),
             hms_nav_dropdown('Management', [
                 hms_nav_item('/modules/admin/admin-user-log.php', 'Users', 'users'),
-                hms_nav_item('/modules/admin/Add-user.php', 'Add User', 'add-user'),
                 hms_nav_item('/modules/admin/doc.php', 'Doctors', 'doctors'),
                 hms_nav_item('/modules/admin/Manage-specializations.php', 'Specializations', 'manage-specializations'),
                 hms_nav_item('/modules/shared/doc-timetable.php', 'Timetable', 'time-table'),
@@ -170,7 +171,7 @@ switch ($role) {
             ], 'operations'),
         ];
         break;
-
+ 
     case 'System Admin':
         $links = [
             hms_nav_item('/modules/dashboard.php', 'Dashboard', 'dashboard'),
@@ -178,9 +179,7 @@ switch ($role) {
             hms_nav_item('/includes/med-record.php', 'Medical Records', 'medical-record'),
             hms_nav_dropdown('Management', [
                 hms_nav_item('/modules/super-admin/super-user-log.php', 'Users', 'users'),
-                hms_nav_item('/modules/super-admin/Add-user.php', 'Add User', 'add-user'),
                 hms_nav_item('/modules/super-admin/doc.php', 'Doctors', 'doctors'),
-                hms_nav_item('/modules/super-admin/Add-Doctor.php', 'Add Doctor', 'add-doctor'),
                 hms_nav_item('/modules/super-admin/Add-specilization.php', 'Specializations', 'manage-specializations'),
                 hms_nav_item('/modules/shared/doc-timetable.php', 'Timetable', 'time-table'),
                 hms_nav_item('/includes/audit-log.php', 'Audit Log', 'audit-log'),
@@ -207,6 +206,7 @@ switch ($role) {
             hms_nav_item('/modules/dashboard.php', 'Dashboard', 'dashboard'),
             hms_nav_item('/modules/user/new_appoint.php', 'New Reservation', 'new-reservation'),
             hms_nav_item('/modules/user/Reservations.php', 'Reservations', 'reservations'),
+            hms_nav_item('/modules/shared/queue-screen.php', 'Queue Board', 'queue-board'),
             hms_nav_item('/includes/med-record.php', 'Medical Records', 'medical-record'),
             hms_nav_item('/modules/shared/doc-timetable.php', 'Doctors Time Table', 'time-table'),
         ];
@@ -969,7 +969,11 @@ if (!defined('HMS_NAV_ASSETS')) {
                         <?php $profileUrl = ($role === 'Patient') ? '/modules/patient/Profile.php' : '/modules/shared/profile.php'; ?>
                         <div class="hms-med-profile-dropdown" data-profile-dropdown>
                             <button type="button" class="hms-med-user" aria-expanded="false">
-                                <span class="hms-med-avatar"><?= htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') ?></span>
+                                <?php if ($role === 'Doctor'): ?>
+                                    <img src="<?= hms_get_doctor_avatar($displayName) ?>" alt="Doctor Avatar" class="hms-med-avatar" style="object-fit: cover;">
+                                <?php else: ?>
+                                    <span class="hms-med-avatar"><?= htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') ?></span>
+                                <?php endif; ?>
                                 <div style="text-align: start;">
                                     <div class="hms-med-user-name"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></div>
                                     <div class="hms-med-user-role"><?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?></div>
@@ -977,10 +981,12 @@ if (!defined('HMS_NAV_ASSETS')) {
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-inline-start: 4px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             </button>
                             <div class="hms-med-profile-dropdown-content">
-                                <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>">Profile</a>
-                                <a href="#">Settings</a>
+                                <?php if ($role === 'Patient'): ?>
+                                    <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>"><i class="bi bi-person-fill"></i> Profile</a>
+                                <?php endif; ?>
+                                <a href="/modules/shared/profile.php"><i class="bi bi-key-fill"></i> Reset Password</a>
                                 <div class="hms-dropdown-divider"></div>
-                                <a href="<?= htmlspecialchars($logoutHref, ENT_QUOTES, 'UTF-8') ?>" class="hms-logout-link">Log Out</a>
+                                <a href="<?= htmlspecialchars($logoutHref, ENT_QUOTES, 'UTF-8') ?>" class="hms-logout-link"><i class="bi bi-box-arrow-right"></i> Log Out</a>
                             </div>
                         </div>
                     </div>
@@ -995,7 +1001,11 @@ if (!defined('HMS_NAV_ASSETS')) {
                 <div class="hms-med-mobile-user">
 
                     <a href="<?= htmlspecialchars($profileUrl, ENT_QUOTES, 'UTF-8') ?>" class="hms-med-user" style="width: 100%;">
-                        <span class="hms-med-avatar"><?= htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php if ($role === 'Doctor'): ?>
+                            <img src="<?= hms_get_doctor_avatar($displayName) ?>" alt="Doctor Avatar" class="hms-med-avatar" style="object-fit: cover;">
+                        <?php else: ?>
+                            <span class="hms-med-avatar"><?= htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php endif; ?>
                         <div style="text-align: start;">
                             <div class="hms-med-user-name"><?= htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') ?></div>
                             <div class="hms-med-user-role"><?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?></div>

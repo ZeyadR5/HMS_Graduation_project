@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/mailer.php';
@@ -43,17 +43,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (empty($email)) {
             $error = 'No email address is linked to this account. Please contact reception.';
         } else {
-            // Generate OTP (6 digits)
-            $otpCode = sprintf("%06d", mt_rand(100000, 999999));
+            // Generate OTP (6 digits) using cryptographically secure random_int()
+            try {
+                $otpCode = sprintf("%06d", random_int(100000, 999999));
+            } catch (Exception $e) {
+                $otpCode = sprintf("%06d", mt_rand(100000, 999999));
+            }
             $otpExpiry = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+
+            // Store hashed OTP
+            $hashedOtp = hash('sha256', $otpCode);
 
             // We use activation_code for both admin code and email OTP
             $upd = $connect->prepare("UPDATE users SET activation_code = ?, activation_expiry = ? WHERE uid = ?");
-            $upd->bind_param("ssi", $otpCode, $otpExpiry, $uid);
+            $upd->bind_param("ssi", $hashedOtp, $otpExpiry, $uid);
             
             if ($upd->execute()) {
                 if (hms_send_otp_email($email, $otpCode, $name)) {
                     $success = 'An OTP has been sent to your email address.';
+                    // Reset attempts count on generating a new code
+                    unset($_SESSION['otp_attempts']);
                 } else {
                     $error = 'Failed to send OTP email. Please check server configuration or use an Activation Code from reception.';
                 }
@@ -76,33 +85,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please enter your Activation Code or OTP.';
         } elseif ($new_pass === '' || $new_pass !== $confirm_pass) {
             $error = 'Passwords do not match.';
-        } elseif (strlen($new_pass) < 6) {
-            $error = 'Password must be at least 6 characters.';
+        } elseif (strlen($new_pass) < 8 || !preg_match('/[A-Z]/', $new_pass)) {
+            $error = 'Password must be at least 8 characters long and contain at least one uppercase letter.';
         } else {
-            // Check the activation code
-            $stmt = $connect->prepare("SELECT activation_code, activation_expiry FROM users WHERE uid = ? LIMIT 1");
-            $stmt->bind_param("i", $uid);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            $userRow = $res->fetch_assoc();
-            $stmt->close();
+            // Rate Limiting check
+            if (!isset($_SESSION['otp_attempts'])) {
+                $_SESSION['otp_attempts'] = 0;
+            }
             
-            $dbCode = $userRow['activation_code'] ?? null;
-            $dbExp = $userRow['activation_expiry'] ?? null;
-            
-            if ($dbCode !== null && $code === $dbCode && strtotime($dbExp) > time()) {
-                $upd = $connect->prepare("UPDATE users SET password = ?, activation_code = NULL, activation_expiry = NULL WHERE uid = ?");
-                $upd->bind_param("si", $new_pass, $uid);
-                if ($upd->execute()) {
-                    $success = 'Password reset successfully! You can now log in.';
-                    $step = 3; // Success state
-                    unset($_SESSION['reset_uid'], $_SESSION['reset_name'], $_SESSION['reset_email']);
-                } else {
-                    $error = 'Failed to update password.';
-                }
-                $upd->close();
+            if ($_SESSION['otp_attempts'] >= 5) {
+                $error = 'Too many failed attempts. Please request a new OTP or Activation Code.';
             } else {
-                $error = 'Invalid or expired Activation Code/OTP.';
+                // Check the activation code
+                $stmt = $connect->prepare("SELECT activation_code, activation_expiry FROM users WHERE uid = ? LIMIT 1");
+                $stmt->bind_param("i", $uid);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                $userRow = $res->fetch_assoc();
+                $stmt->close();
+                
+                $dbCode = $userRow['activation_code'] ?? null;
+                $dbExp = $userRow['activation_expiry'] ?? null;
+                
+                if ($dbCode !== null && hash('sha256', $code) === $dbCode && strtotime($dbExp) > time()) {
+                    $upd = $connect->prepare("UPDATE users SET password = ?, activation_code = NULL, activation_expiry = NULL WHERE uid = ?");
+                    $upd->bind_param("si", $new_pass, $uid);
+                    if ($upd->execute()) {
+                        $success = 'Password reset successfully! You can now log in.';
+                        $step = 3; // Success state
+                        unset($_SESSION['reset_uid'], $_SESSION['reset_name'], $_SESSION['reset_email'], $_SESSION['otp_attempts']);
+                    } else {
+                        $error = 'Failed to update password.';
+                    }
+                    $upd->close();
+                } else {
+                    $_SESSION['otp_attempts']++;
+                    $remaining = 5 - $_SESSION['otp_attempts'];
+                    if ($remaining <= 0) {
+                        $error = 'Too many failed attempts. Please request a new OTP or Activation Code.';
+                    } else {
+                        $error = 'Invalid or expired Activation Code/OTP. Remaining attempts: ' . $remaining;
+                    }
+                }
             }
         }
     }
@@ -114,10 +138,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Forgot Password - HMS</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
 <style>
     body { background: #f8fbff; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
     .card { border: none; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); overflow: hidden; width: 100%; max-width: 450px; }
     .card-header { background: linear-gradient(135deg, #0ea5e9, #14b8a6); color: white; padding: 30px 20px; text-align: center; border: none; }
     .card-body { padding: 40px 30px; background: white; }
@@ -186,14 +212,134 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-sm font-bold text-gray-700">New Password</label>
-                    <input type="password" name="new_password" class="form-control" placeholder="At least 6 characters" required>
+                    <div class="position-relative">
+                        <input type="password" name="new_password" id="new_password" class="form-control pe-5" placeholder="At least 8 characters" required>
+                        <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0 text-muted toggle-password-btn" data-target="new_password" tabindex="-1" style="box-shadow: none;">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Password Requirements Checklist -->
+                <div class="mb-3">
+                    <div class="card p-3 border border-light bg-light" style="border-radius: 12px;">
+                        <div class="fw-bold text-dark mb-1" style="font-size: 0.75rem;">Password requirements / شروط كلمة المرور:</div>
+                        <div class="d-flex flex-col gap-1 text-muted" style="font-size: 0.72rem; flex-direction: column;">
+                            <div id="req-length" class="d-flex align-items-center gap-2 transition-all">
+                                <i class="bi bi-circle" id="icon-length"></i> <span>At least 8 characters / 8 حروف على الأقل</span>
+                            </div>
+                            <div id="req-uppercase" class="d-flex align-items-center gap-2 transition-all">
+                                <i class="bi bi-circle" id="icon-uppercase"></i> <span>At least 1 uppercase letter / حرف كابيتال واحد على الأقل</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mb-3">
                     <label class="form-label text-sm font-bold text-gray-700">Confirm Password</label>
-                    <input type="password" name="confirm_password" class="form-control" placeholder="Confirm password" required>
+                    <div class="position-relative">
+                        <input type="password" name="confirm_password" id="confirm_password" class="form-control pe-5" placeholder="Confirm password" required>
+                        <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0 text-muted toggle-password-btn" data-target="confirm_password" tabindex="-1" style="box-shadow: none;">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div id="matchMessage" class="fw-bold mt-2" style="font-size: 0.72rem;"></div>
                 </div>
-                <button type="submit" class="btn btn-primary">Reset Password</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Reset Password</button>
             </form>
+
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Toggle Passwords
+                const toggleButtons = document.querySelectorAll('.toggle-password-btn');
+                toggleButtons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const targetId = this.getAttribute('data-target');
+                        const input = document.getElementById(targetId);
+                        const icon = this.querySelector('i');
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.replace('bi-eye', 'bi-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.replace('bi-eye-slash', 'bi-eye');
+                        }
+                    });
+                });
+
+                // Real-time checks
+                const newPass = document.getElementById('new_password');
+                const confirmPass = document.getElementById('confirm_password');
+                const reqLength = document.getElementById('req-length');
+                const iconLength = document.getElementById('icon-length');
+                const reqUppercase = document.getElementById('req-uppercase');
+                const iconUppercase = document.getElementById('icon-uppercase');
+                const matchMessage = document.getElementById('matchMessage');
+                const submitBtn = document.getElementById('submitBtn');
+
+                function validate() {
+                    const val = newPass.value;
+                    const isLengthValid = val.length >= 8;
+                    const isUppercaseValid = /[A-Z]/.test(val);
+
+                    if (isLengthValid) {
+                        reqLength.classList.remove('text-muted', 'text-danger');
+                        reqLength.classList.add('text-success');
+                        iconLength.className = 'bi bi-check-circle-fill text-success';
+                    } else {
+                        reqLength.classList.remove('text-success');
+                        reqLength.classList.add('text-muted');
+                        iconLength.className = 'bi bi-circle';
+                    }
+
+                    if (isUppercaseValid) {
+                        reqUppercase.classList.remove('text-muted', 'text-danger');
+                        reqUppercase.classList.add('text-success');
+                        iconUppercase.className = 'bi bi-check-circle-fill text-success';
+                    } else {
+                        reqUppercase.classList.remove('text-success');
+                        reqUppercase.classList.add('text-muted');
+                        iconUppercase.className = 'bi bi-circle';
+                    }
+
+                    if (confirmPass.value) {
+                        if (newPass.value === confirmPass.value) {
+                            matchMessage.textContent = 'Passwords match / كلمات المرور متطابقة';
+                            matchMessage.className = 'fw-bold mt-2 text-success';
+                        } else {
+                            matchMessage.textContent = 'Passwords do not match / كلمات المرور غير متطابقة';
+                            matchMessage.className = 'fw-bold mt-2 text-danger';
+                        }
+                    } else {
+                        matchMessage.textContent = '';
+                    }
+
+                    return isLengthValid && isUppercaseValid;
+                }
+
+                newPass.addEventListener('input', validate);
+                confirmPass.addEventListener('input', validate);
+
+                document.querySelector('form').addEventListener('submit', function(e) {
+                    const isValid = validate();
+                    const isMatch = newPass.value === confirmPass.value;
+
+                    if (!isValid) {
+                        e.preventDefault();
+                        if (newPass.value.length < 8) {
+                            reqLength.classList.add('text-danger');
+                        }
+                        if (!/[A-Z]/.test(newPass.value)) {
+                            reqUppercase.classList.add('text-danger');
+                        }
+                        alert('Password does not meet requirements!');
+                    } else if (!isMatch) {
+                        e.preventDefault();
+                        alert('Passwords do not match!');
+                    }
+                });
+            });
+            </script>
         <?php elseif ($step === 3): ?>
             <div class="text-center">
                 <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>

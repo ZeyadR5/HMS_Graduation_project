@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/notification-api.php';
 
@@ -31,17 +31,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fetch notifications
 $filter = $_GET['filter'] ?? 'all';
-$notifications = hms_get_notifications($conn, $recipientType, $recipientId, 100, 0);
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$perPage = 20;
+$offset = ($page - 1) * $perPage;
+
 $unreadCount = hms_get_unread_count($conn, $recipientType, $recipientId);
 
-// Filter
+// Build query
+$where = "recipient_type = ? AND recipient_id = ?";
+$params = [$recipientType, $recipientId];
+$types = "si";
+
 if ($filter !== 'all') {
-    $notifications = array_filter($notifications, function($n) use ($filter) {
-        if ($filter === 'unread') return (int)$n['is_read'] === 0;
-        return $n['type'] === $filter;
-    });
-    $notifications = array_values($notifications);
+    if ($filter === 'unread') {
+        $where .= " AND is_read = 0";
+    } else {
+        $where .= " AND type = ?";
+        $params[] = $filter;
+        $types .= "s";
+    }
 }
+
+// Count total
+$cntStmt = $conn->prepare("SELECT COUNT(*) as cnt FROM notifications WHERE $where");
+$cntStmt->bind_param($types, ...$params);
+$cntStmt->execute();
+$totalRows = $cntStmt->get_result()->fetch_assoc()['cnt'] ?? 0;
+$cntStmt->close();
+
+$totalPages = ceil($totalRows / $perPage);
+
+// Fetch data
+$stmt = $conn->prepare("
+    SELECT n.*, d.doctorName 
+    FROM notifications n 
+    LEFT JOIN doctors d ON d.id = n.related_doctor_id 
+    WHERE n.$where 
+    ORDER BY n.created_at DESC 
+    LIMIT ? OFFSET ?
+");
+$params[] = $perPage;
+$params[] = $offset;
+$types .= "ii";
+
+// Since dynamic bind_param needs references in PHP 7/8, we do this:
+$bindParams = [];
+$bindParams[] = $types;
+foreach ($params as $k => $v) {
+    $bindParams[] = &$params[$k];
+}
+call_user_func_array([$stmt, 'bind_param'], $bindParams);
+
+$stmt->execute();
+$res = $stmt->get_result();
+$notifications = [];
+while ($row = $res->fetch_assoc()) {
+    $notifications[] = $row;
+}
+$stmt->close();
 
 $conn->close();
 ?>
@@ -51,10 +98,11 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications — Echo HMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/l-gh.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <style>
@@ -337,6 +385,40 @@ $conn->close();
                         <?php endif; ?>
                     </div>
                 </div>
+
+                <!-- Pagination UI -->
+                <?php if (isset($totalPages) && $totalPages > 1): ?>
+                <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4 rounded-xl shadow-sm">
+                    <div class="flex flex-1 justify-between sm:hidden">
+                        <?php if ($page > 1): ?>
+                            <a href="?filter=<?= urlencode($filter) ?>&page=<?= $page - 1 ?>" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Previous</a>
+                        <?php endif; ?>
+                        <?php if ($page < $totalPages): ?>
+                            <a href="?filter=<?= urlencode($filter) ?>&page=<?= $page + 1 ?>" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Next</a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Showing <span class="font-medium"><?= $offset + 1 ?></span> to <span class="font-medium"><?= min($offset + $perPage, $totalRows) ?></span> of <span class="font-medium"><?= $totalRows ?></span> results
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                <?php if ($page > 1): ?>
+                                    <a href="?filter=<?= urlencode($filter) ?>&page=<?= $page - 1 ?>" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"><i class="bi bi-chevron-left"></i></a>
+                                <?php endif; ?>
+                                <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                                    <a href="?filter=<?= urlencode($filter) ?>&page=<?= $p ?>" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold <?= $p === $page ? 'bg-sky-500 text-white' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50' ?>"><?= $p ?></a>
+                                <?php endfor; ?>
+                                <?php if ($page < $totalPages): ?>
+                                    <a href="?filter=<?= urlencode($filter) ?>&page=<?= $page + 1 ?>" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"><i class="bi bi-chevron-right"></i></a>
+                                <?php endif; ?>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </main>
     </div>

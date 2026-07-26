@@ -58,13 +58,14 @@ $results = mysqli_query($connect, $query);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Payments</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <link rel="icon" href="/assets/images/echol.png">
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
 </head>
 <body>
     <div class="min-h-full">
@@ -135,7 +136,13 @@ $results = mysqli_query($connect, $query);
                                         <th><p class="text-lg font-bold text-gray-900 text-center"><?= htmlspecialchars($row['patient_Name']) ?></p></th>
                                         <th><p class="text-lg font-bold text-gray-900 text-center"><?= htmlspecialchars($row['doctorSpecialization']) ?></p></th>
                                         <th><p class="text-lg font-bold text-gray-900 text-center"><?= htmlspecialchars((string)($row['paid'] ?: $row['consultancyFees'])) ?></p></th>
-                                        <th><p class="text-lg font-bold text-gray-900 text-center"><?= htmlspecialchars($row['employname']) ?></p></th>
+                                        <?php
+                                        $byName = trim($row['employname'] ?? '');
+                                        if ($byName === '' || $byName === '0' || ctype_digit($byName)) {
+                                            $byName = 'Patient';
+                                        }
+                                        ?>
+                                        <th><p class="text-lg font-bold text-gray-900 text-center"><?= htmlspecialchars($byName) ?></p></th>
                                         <th><p class="text-lg font-bold text-gray-900 text-center"><a href="<?= htmlspecialchars($receiptPath) ?>?ref=<?= urlencode(hms_encrypt_id((int)$row['apid'])) ?>" class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-lg font-medium text-green-700 ring-1 ring-inset ring-green-600/20">View</a></p></th>
                                     </tr>
                                 <?php endwhile; ?>

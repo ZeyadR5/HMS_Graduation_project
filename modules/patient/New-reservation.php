@@ -1,8 +1,9 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/notification-api.php';
 require_once __DIR__ . '/../../includes/payment-config.php';
 require_once __DIR__ . '/../../includes/secure-token.php';
+require_once __DIR__ . '/../../includes/mailer.php';
 
 ini_set("display_errors", 0);
 
@@ -104,7 +105,25 @@ if (isset($_POST['Save'])) {
                 'type' => 'queue',
                 'related_doctor_id' => intval($doctorid),
                 'related_appointment_id' => $newApptId,
+                'mirror_email' => false,
             ]);
+        }
+
+        // ── Email: Booking Confirmation ──────────────────────────────────
+        $emailStmt = $conn->prepare("SELECT email, fullName FROM users WHERE uid = ? AND email IS NOT NULL AND email != '' LIMIT 1");
+        $emailStmt->bind_param("i", $userid);
+        $emailStmt->execute();
+        $emailRow = $emailStmt->get_result()->fetch_assoc();
+        $emailStmt->close();
+        if ($emailRow && !empty($emailRow['email'])) {
+            hms_send_appointment_booked_email(
+                $emailRow['email'],
+                $emailRow['fullName'] ?: $username,
+                $docNameRow['doctorName'] ?? 'Doctor',
+                $appdate,
+                $time,
+                (int)$fees
+            );
         }
 
         // Redirect to deposit payment page
@@ -128,21 +147,24 @@ if (isset($_POST['Save'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Reservation</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
+<link rel="icon" href="/assets/images/echol.png">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="icon" href="/assets/images/echol.png">
     
-    <!-- Flatpickr CSS & JS -->
+    <!-- Flatpickr CSS only (no blocking JS) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
     <script>
         var fp; // Flatpickr instance
         
-        document.addEventListener('DOMContentLoaded', function() {
+        // Defer flatpickr init until DOM is ready - will be initialized after scripts load
+        function initFlatpickr() {
+            if (typeof flatpickr === 'undefined') {
+                setTimeout(initFlatpickr, 100);
+                return;
+            }
             fp = flatpickr("#Date", {
                 minDate: "today",
                 dateFormat: "Y-m-d",
@@ -151,7 +173,8 @@ if (isset($_POST['Save'])) {
                     loadAvailableSlots();
                 }
             });
-        });
+        }
+        document.addEventListener('DOMContentLoaded', initFlatpickr);
 
         function getdoctor(val) {
             $.ajax({
@@ -452,9 +475,11 @@ if (isset($_POST['Save'])) {
                 </form>
             </div>
         </main>
-        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
-
-    <script src="/assets/js/responsive-nav.js" defer></script>
+        <!-- Scripts deferred to end of body for minimal TBT -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+        <script src="/assets/js/responsive-nav.js" defer></script>
 </body>
 
 </html>

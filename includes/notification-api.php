@@ -5,7 +5,7 @@
 
 if (!function_exists('hms_create_notification')) {
     /**
-     * Create a notification
+     * Create a notification and mirror it to email if the recipient has one.
      */
     function hms_create_notification(mysqli $conn, array $data): bool
     {
@@ -24,6 +24,57 @@ if (!function_exists('hms_create_notification')) {
         $stmt->bind_param("sisssii", $recipientType, $recipientId, $title, $message, $type, $doctorId, $appointmentId);
         $result = $stmt->execute();
         $stmt->close();
+
+        // ── Mirror to email ───────────────────────────────────────────────────
+        $mirrorEmail = $data['mirror_email'] ?? true;
+        if ($result && $recipientId > 0 && $mirrorEmail) {
+            // Include mailer if not already loaded
+            if (!function_exists('hms_send_notification_email')) {
+                $mailerPath = __DIR__ . '/mailer.php';
+                if (file_exists($mailerPath)) {
+                    require_once $mailerPath;
+                }
+            }
+
+            if (function_exists('hms_send_notification_email')) {
+                $email = null;
+                $name  = null;
+
+                try {
+                    if ($recipientType === 'patient') {
+                        $es = $conn->prepare("SELECT email, fullName FROM users WHERE uid = ? AND email IS NOT NULL AND email != '' LIMIT 1");
+                        $es->bind_param("i", $recipientId);
+                        $es->execute();
+                        $er = $es->get_result()->fetch_assoc();
+                        $es->close();
+                        if ($er) { $email = $er['email']; $name = $er['fullName'] ?: 'Patient'; }
+
+                    } elseif ($recipientType === 'doctor') {
+                        $es = $conn->prepare("SELECT docEmail, doctorName FROM doctors WHERE id = ? AND docEmail IS NOT NULL AND docEmail != '' LIMIT 1");
+                        $es->bind_param("i", $recipientId);
+                        $es->execute();
+                        $er = $es->get_result()->fetch_assoc();
+                        $es->close();
+                        if ($er) { $email = $er['docEmail']; $name = $er['doctorName'] ?: 'Doctor'; }
+
+                    } elseif (in_array($recipientType, ['employee', 'admin'], true)) {
+                        $es = $conn->prepare("SELECT email, username FROM employ WHERE id = ? AND email IS NOT NULL AND email != '' LIMIT 1");
+                        $es->bind_param("i", $recipientId);
+                        $es->execute();
+                        $er = $es->get_result()->fetch_assoc();
+                        $es->close();
+                        if ($er) { $email = $er['email']; $name = $er['username'] ?: 'Staff'; }
+                    }
+
+                    if ($email) {
+                        hms_send_notification_email($email, $name, $title, $message, $type);
+                    }
+                } catch (\Throwable $e) {
+                    error_log("HMS notification email lookup error: " . $e->getMessage());
+                }
+            }
+        }
+
         return $result;
     }
 }
@@ -179,6 +230,7 @@ if (!function_exists('hms_notify_affected_patients')) {
                 'message' => $doctorName . ' has updated their schedule. ' . $changeDescription,
                 'type' => 'schedule_change',
                 'related_doctor_id' => $doctorId,
+                'mirror_email' => false,
             ]);
         }
         $empStmt->close();
@@ -195,6 +247,7 @@ if (!function_exists('hms_notify_affected_patients')) {
                 'message' => $doctorName . ' has updated their schedule. ' . $changeDescription,
                 'type' => 'schedule_change',
                 'related_doctor_id' => $doctorId,
+                'mirror_email' => false,
             ]);
         }
         $adminStmt->close();
@@ -207,6 +260,10 @@ if (!function_exists('hms_notify_reception_new_booking')) {
      */
     function hms_notify_reception_new_booking(mysqli $conn, array $bookingData): void
     {
+        // Per user request: staff should only be notified of cancellations and schedule changes.
+        // Skip new booking notifications to save processing time.
+        return;
+        
         error_log("HMS: hms_notify_reception_new_booking called for Admin/Employee notification. Patient: " . ($bookingData['patient_name'] ?? 'Unknown'));
         $patientName = $bookingData['patient_name'] ?? 'Patient';
         $doctorName  = $bookingData['doctor_name'] ?? 'Doctor';
@@ -236,6 +293,7 @@ if (!function_exists('hms_notify_reception_new_booking')) {
                 'type'          => 'appointment',
                 'related_doctor_id' => $bookingData['doctor_id'] ?? null,
                 'related_appointment_id' => $bookingData['appointment_id'] ?? null,
+                'mirror_email' => false,
             ]);
         }
         $empStmt->close();
@@ -253,6 +311,7 @@ if (!function_exists('hms_notify_reception_new_booking')) {
                 'type'          => 'appointment',
                 'related_doctor_id' => $bookingData['doctor_id'] ?? null,
                 'related_appointment_id' => $bookingData['appointment_id'] ?? null,
+                'mirror_email' => false,
             ]);
         }
         $adminStmt->close();

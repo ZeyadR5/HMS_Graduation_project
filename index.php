@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 date_default_timezone_set('Africa/Cairo');
 define('HMS_SKIP_AUTO_CONNECT', true);
 require_once __DIR__ . '/includes/config.php';
@@ -25,6 +25,7 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
 $error        = "";
 $signup_error = "";
 $signup_ok    = "";
+$showRegister = false;
 
 $connect = hms_db_connect();
 
@@ -172,6 +173,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'login') {
 
 // ── SIGN UP (Patient only) ────────────────────────────────────────────────────
 if (isset($_POST['action']) && $_POST['action'] === 'register') {
+    $showRegister = true;
     $fullName  = trim($_POST['fullName']   ?? '');
     $email     = trim($_POST['reg_email']  ?? '');
     $nat_id    = trim($_POST['nat_id']     ?? '');
@@ -184,10 +186,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
         $signup_error = "Security check failed. Please try again.";
     } elseif ($fullName === '' || $email === '' || $nat_id === '') {
         $signup_error = "Please fill all required fields.";
+    } elseif (strlen($fullName) < 3) {
+        $signup_error = "Full Name must be at least 3 characters.";
+    } elseif (!preg_match('/^[0-9]{14}$/', $nat_id)) {
+        $signup_error = "National ID must be exactly 14 digits and contain only numbers.";
+    } elseif ($age <= 0 || $age > 150) {
+        $signup_error = "Age must be a valid number between 1 and 150.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $signup_error = "Invalid email format.";
     } elseif ($pass1 !== $pass2) {
         $signup_error = "Passwords do not match.";
-    } elseif (strlen($pass1) < 6) {
-        $signup_error = "Password must be at least 6 characters.";
+    } elseif (strlen($pass1) < 8 || !preg_match('/[A-Z]/', $pass1)) {
+        $signup_error = "Password must be at least 8 characters long and contain at least one uppercase letter.";
     } else {
         // Check whether email already belongs to another record
         $chkEmail = $connect->prepare("SELECT uid, nat_id, email, password FROM `users` WHERE `email` = ? LIMIT 1");
@@ -225,37 +235,54 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
                     $signup_error = "This National ID is already registered in our system. To link this account securely, please enter the Activation Code obtained from the reception.";
                     $showActivationCodeField = true;
                 } else {
-                    if ($existingActCode !== null && $submittedCode === $existingActCode && strtotime($existingActExp) > time()) {
-                        // Valid Code! Update account
-                        $upd = $connect->prepare("
-                            UPDATE `users`
-                            SET `fullName` = ?,
-                                `email`    = ?,
-                                `password` = ?,
-                                `gender`   = CASE WHEN ? <> '' THEN ? ELSE `gender` END,
-                                `p_age`    = CASE WHEN ? > 0 THEN ? ELSE `p_age` END,
-                                `activation_code` = NULL,
-                                `activation_expiry` = NULL
-                            WHERE `uid` = ?
-                        ");
-                        $upd->bind_param("sssssiii", $fullName, $email, $newPassword, $gender, $gender, $age, $age, $existingUid);
-                        
-                        if ($upd->execute()) {
-                            hms_audit_log($connect, 'auth.account.recovered', [
-                                'entity_type' => 'user',
-                                'entity_id' => (string)$existingUid,
-                                'description' => 'Account recovered or activated using Activation Code',
-                            ]);
-                            $signup_ok = "Account activated successfully! You can now sign in.";
-                            $showActivationCodeField = false;
+                    if (!isset($_SESSION['activation_attempts'])) {
+                        $_SESSION['activation_attempts'] = 0;
+                    }
+
+                    if ($_SESSION['activation_attempts'] >= 5) {
+                        $signup_error = "Too many failed attempts. Please contact reception to request a new Activation Code.";
+                        $showActivationCodeField = true;
+                    } else {
+                        if ($existingActCode !== null && hash('sha256', $submittedCode) === $existingActCode && strtotime($existingActExp) > time()) {
+                            // Valid Code! Update account
+                            $upd = $connect->prepare("
+                                UPDATE `users`
+                                SET `fullName` = ?,
+                                    `email`    = ?,
+                                    `password` = ?,
+                                    `gender`   = CASE WHEN ? <> '' THEN ? ELSE `gender` END,
+                                    `p_age`    = CASE WHEN ? > 0 THEN ? ELSE `p_age` END,
+                                    `activation_code` = NULL,
+                                    `activation_expiry` = NULL
+                                WHERE `uid` = ?
+                            ");
+                            $upd->bind_param("sssssiii", $fullName, $email, $newPassword, $gender, $gender, $age, $age, $existingUid);
+                            
+                            if ($upd->execute()) {
+                                hms_audit_log($connect, 'auth.account.recovered', [
+                                    'entity_type' => 'user',
+                                    'entity_id' => (string)$existingUid,
+                                    'description' => 'Account recovered or activated using Activation Code',
+                                ]);
+                                $signup_ok = "Account activated successfully! You can now sign in.";
+                                $showActivationCodeField = false;
+                                unset($_SESSION['activation_attempts']);
+                                $showRegister = false;
+                            } else {
+                                $signup_error = "Failed to update account. Please try again.";
+                                $showActivationCodeField = true;
+                            }
+                            $upd->close();
                         } else {
-                            $signup_error = "Failed to update account. Please try again.";
+                            $_SESSION['activation_attempts']++;
+                            $remaining = 5 - $_SESSION['activation_attempts'];
+                            if ($remaining <= 0) {
+                                $signup_error = "Too many failed attempts. Please contact reception to request a new Activation Code.";
+                            } else {
+                                $signup_error = "Invalid or expired Activation Code. Remaining attempts: " . $remaining;
+                            }
                             $showActivationCodeField = true;
                         }
-                        $upd->close();
-                    } else {
-                        $signup_error = "Invalid or expired Activation Code.";
-                        $showActivationCodeField = true;
                     }
                 }
             } else {
@@ -279,6 +306,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
                         ],
                     ]);
                     $signup_ok = "Account created! You can now sign in.";
+                    $showRegister = false;
                 } else {
                     hms_audit_log($connect, 'auth.register.failed', [
                         'entity_type' => 'user',
@@ -299,6 +327,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'register') {
 
 $sel = $_POST['role'] ?? 'Patient';
 $showRegister = isset($_POST['action']) && $_POST['action'] === 'register';
+if (isset($signup_ok)) {
+    $showRegister = false;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -312,6 +343,7 @@ $showRegister = isset($_POST['action']) && $_POST['action'] === 'register';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 
 :root {
   --blue:    #2d7dd2;
@@ -341,7 +373,7 @@ body {
   position: relative;
   width: 960px;
   max-width: 100%;
-  height: 620px;
+  height: 650px; /* Increased from 620px to prevent scrolling */
   background: var(--white);
   border-radius: var(--radius);
   box-shadow: 0 32px 80px rgba(28,38,55,0.18), 0 8px 24px rgba(28,38,55,0.08);
@@ -382,12 +414,30 @@ body {
   height: 100%;
   width: 58%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 40px 50px;
+  justify-content: flex-start;
+  padding: 20px 40px; /* Reduced vertical padding to save space */
   transition: left var(--speed) cubic-bezier(.77,0,.18,1),
               opacity calc(var(--speed)*0.4) ease;
   z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom modern scrollbar for the form boxes */
+.form-box::-webkit-scrollbar {
+  width: 4px;
+}
+.form-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+.form-box::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.form-box::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* signin: sits on the right, visible */
@@ -489,7 +539,7 @@ body {
 .panel-footer { font-size: 11.5px; color: rgba(255,255,255,.4); text-align: center; }
 
 /* ── FORM INNER ── */
-.form-inner { width: 100%; max-width: 340px; }
+.form-inner { width: 100%; max-width: 340px; margin: auto 0; }
 .form-inner h1 {
   font-family: 'Playfair Display', serif;
   font-size: 28px;
@@ -540,7 +590,7 @@ body {
 /* Fields */
 .field { margin-bottom: 13px; position: relative; }
 .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--dark); margin-bottom: 6px; letter-spacing: .3px; }
-.field .ico { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events:none; }
+.field .ico { position: absolute; left: 13px; bottom: 13px; color: var(--muted); font-size: 13px; pointer-events:none; }
 .field input, .field select {
   width: 100%;
   padding: 11px 14px 11px 38px;
@@ -651,7 +701,8 @@ body {
 
 <link rel="stylesheet" href="/assets/css/responsive.css">
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
 </head>
 <body>
 
@@ -677,7 +728,7 @@ body {
         </button>
       </div>
 
-      <div class="panel-footer">Hospital Management System © 2025</div>
+      <div class="panel-footer">Hospital Management System © 2026</div>
     </div>
   </div>
 
@@ -689,6 +740,9 @@ body {
 
       <?php if ($error): ?>
       <div class="alert err"><i class="fa fa-circle-exclamation"></i><?= htmlspecialchars($error) ?></div>
+      <?php endif; ?>
+      <?php if (isset($signup_ok) && $signup_ok): ?>
+      <div class="alert ok"><i class="fa fa-circle-check"></i><?= htmlspecialchars($signup_ok) ?></div>
       <?php endif; ?>
 
       <form method="POST" id="login-form">
@@ -707,8 +761,11 @@ body {
         <div class="field">
           <label>Password</label>
           <i class="fa fa-lock ico"></i>
-          <input type="password" name="password" placeholder="Enter your password"
-                 autocomplete="current-password" required>
+          <input type="password" name="password" id="loginPassword" placeholder="Enter your password"
+                 autocomplete="current-password" style="padding-right: 40px;" required>
+          <button type="button" class="toggle-password-btn" data-target="loginPassword" style="position: absolute; right: 12px; bottom: 11px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; z-index: 10;" tabindex="-1">
+              <i class="fa fa-eye"></i>
+          </button>
         </div>
         
         <div style="text-align: right; margin-top: -5px; margin-bottom: 15px;">
@@ -748,7 +805,7 @@ body {
         <div class="field">
           <label>Full Name</label>
           <i class="fa fa-user ico"></i>
-          <input type="text" name="fullName" placeholder="Patient Name" required
+          <input type="text" name="fullName" placeholder="Patient Name" required minlength="3"
                  value="<?= htmlspecialchars($_POST['fullName'] ?? '') ?>">
         </div>
 
@@ -756,7 +813,8 @@ body {
           <div class="field">
             <label>Age</label>
             <i class="fa fa-hourglass-half ico"></i>
-            <input type="number" name="age" id="age" placeholder="Age" min="1" required
+            <input type="number" name="age" id="age" placeholder="Age" min="1" max="150" required
+                   oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);"
                   value="<?= htmlspecialchars($_POST['age'] ?? '') ?>">
           </div>
 
@@ -771,31 +829,54 @@ body {
           </div>
         </div>
 
-        <div class="field">
-          <label>National ID</label>
-          <i class="fa fa-id-card ico"></i>
-          <input type="text" name="nat_id" placeholder="National ID" required
-                 value="<?= htmlspecialchars($_POST['nat_id'] ?? '') ?>">
-        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>National ID</label>
+            <i class="fa fa-id-card ico"></i>
+            <input type="text" name="nat_id" placeholder="National ID" required
+                   pattern="[0-9]{14}" maxlength="14" minlength="14" title="National ID must be exactly 14 digits / يجب أن يكون الرقم القومي مكوناً من 14 رقماً" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                   value="<?= htmlspecialchars($_POST['nat_id'] ?? '') ?>">
+          </div>
 
-        <div class="field">
-          <label>Email</label>
-          <i class="fa fa-envelope ico"></i>
-          <input type="email" name="reg_email" placeholder="your@email.com" required
-                 value="<?= htmlspecialchars($_POST['reg_email'] ?? '') ?>">
+          <div class="field">
+            <label>Email</label>
+            <i class="fa fa-envelope ico"></i>
+            <input type="email" name="reg_email" placeholder="your@email.com" required
+                   value="<?= htmlspecialchars($_POST['reg_email'] ?? '') ?>">
+          </div>
         </div>
 
         <div class="field-row">
           <div class="field">
             <label>Password</label>
             <i class="fa fa-lock ico"></i>
-            <input type="password" name="reg_pass" id="pass1" placeholder="Password" required>
+            <input type="password" name="reg_pass" id="pass1" placeholder="Password" style="padding-right: 40px;" required>
+            <button type="button" class="toggle-password-btn" data-target="pass1" style="position: absolute; right: 12px; bottom: 11px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; z-index: 10;" tabindex="-1">
+                <i class="fa fa-eye"></i>
+            </button>
           </div>
           <div class="field">
-            <label>Confirm</label>
+            <label>Confirm Password</label>
             <i class="fa fa-lock ico"></i>
-            <input type="password" name="reg_pass2" id="pass2" placeholder="Confirm" required>
+            <input type="password" name="reg_pass2" id="pass2" placeholder="Confirm" style="padding-right: 40px;" required>
+            <button type="button" class="toggle-password-btn" data-target="pass2" style="position: absolute; right: 12px; bottom: 11px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; z-index: 10;" tabindex="-1">
+                <i class="fa fa-eye"></i>
+            </button>
           </div>
+        </div>
+
+        <!-- Password Requirements Checklist -->
+        <div class="field" style="margin-top: -5px; margin-bottom: 15px;">
+            <div style="background: var(--light); padding: 10px 14px; border: 1.5px solid #dce5f0; border-radius: 10px; font-size: 0.72rem; color: var(--muted); text-align: left;">
+                <div style="font-weight: 600; color: var(--dark); margin-bottom: 4px;">Password requirements / شروط كلمة المرور:</div>
+                <div id="req-length" style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px; transition: color 0.2s;">
+                    <i class="fa fa-circle" id="icon-length" style="font-size: 0.65rem;"></i> At least 8 characters / 8 حروف على الأقل
+                </div>
+                <div id="req-uppercase" style="display: flex; align-items: center; gap: 6px; transition: color 0.2s;">
+                    <i class="fa fa-circle" id="icon-uppercase" style="font-size: 0.65rem;"></i> At least 1 uppercase letter / حرف كابيتال واحد على الأقل
+                </div>
+            </div>
+            <div id="matchMessage" style="font-size: 0.72rem; font-weight: 600; margin-top: 5px; text-align: left;"></div>
         </div>
 
         <?php if (isset($showActivationCodeField) && $showActivationCodeField): ?>
@@ -861,12 +942,90 @@ function togglePanel() {
 
 if (wrapper.classList.contains('active')) updatePanel('register');
 
+// Toggle password handler
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.toggle-password-btn');
+  if (btn) {
+    const targetId = btn.getAttribute('data-target');
+    const input = document.getElementById(targetId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa fa-eye';
+    }
+  }
+});
+
+// Dynamic checklist & matching verification
 const pass1 = document.getElementById('pass1');
 const pass2 = document.getElementById('pass2');
-if (pass2) {
-  pass2.addEventListener('input', () => {
-    pass2.style.borderColor = pass1.value === pass2.value ? '#27ae60' : '#e74c3c';
-  });
+const reqLength = document.getElementById('req-length');
+const iconLength = document.getElementById('icon-length');
+const reqUppercase = document.getElementById('req-uppercase');
+const iconUppercase = document.getElementById('icon-uppercase');
+const matchMessage = document.getElementById('matchMessage');
+const regForm = document.getElementById('reg-form');
+
+if (pass1 && pass2) {
+  function validate() {
+    const val = pass1.value;
+    const isLengthValid = val.length >= 8;
+    const isUppercaseValid = /[A-Z]/.test(val);
+
+    if (isLengthValid) {
+      reqLength.style.color = '#27ae60';
+      iconLength.className = 'fa fa-circle-check';
+    } else {
+      reqLength.style.color = '';
+      iconLength.className = 'fa fa-circle';
+    }
+
+    if (isUppercaseValid) {
+      reqUppercase.style.color = '#27ae60';
+      iconUppercase.className = 'fa fa-circle-check';
+    } else {
+      reqUppercase.style.color = '';
+      iconUppercase.className = 'fa fa-circle';
+    }
+
+    if (pass2.value) {
+      if (pass1.value === pass2.value) {
+        matchMessage.textContent = 'Passwords match / كلمات المرور متطابقة';
+        matchMessage.style.color = '#27ae60';
+        pass2.style.borderColor = '#27ae60';
+      } else {
+        matchMessage.textContent = 'Passwords do not match / كلمات المرور غير متطابقة';
+        matchMessage.style.color = '#e74c3c';
+        pass2.style.borderColor = '#e74c3c';
+      }
+    } else {
+      matchMessage.textContent = '';
+      pass2.style.borderColor = '';
+    }
+
+    return isLengthValid && isUppercaseValid;
+  }
+
+  pass1.addEventListener('input', validate);
+  pass2.addEventListener('input', validate);
+
+  if (regForm) {
+    regForm.addEventListener('submit', function(e) {
+      const isValid = validate();
+      const isMatch = pass1.value === pass2.value;
+
+      if (!isValid) {
+        e.preventDefault();
+        alert('Password does not meet requirements!');
+      } else if (!isMatch) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+      }
+    });
+  }
 }
 </script>
 

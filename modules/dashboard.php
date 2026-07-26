@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/secure-token.php';
 require_once __DIR__ . '/../includes/appointment-helpers.php';
@@ -129,7 +129,10 @@ function hms_datetime_label($date, $time): string
         return '-';
     }
 
-    return trim(hms_short_date($date) . ' at ' . hms_short_time($time));
+    $timestamp = strtotime((string)$date);
+    $dateStr = $timestamp ? date('d M', $timestamp) : hms_short_date($date);
+
+    return trim($dateStr . ' at ' . hms_short_time($time));
 }
 
 function hms_limit_text($value, int $length = 90): string
@@ -1214,9 +1217,10 @@ $heroGradient = $heroToneMap[$pageTone] ?? $heroToneMap['cyan'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <link rel="icon" href="/assets/images/echol.png">
     <style>
@@ -1328,7 +1332,7 @@ $heroGradient = $heroToneMap[$pageTone] ?? $heroToneMap['cyan'];
                                         <thead class="bg-slate-50">
                                             <tr>
                                                 <?php foreach ($primaryColumns as $column): ?>
-                                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"><?= hms_e($column) ?></th>
+                                                    <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"><?= hms_e($column) ?></th>
                                                 <?php endforeach; ?>
                                             </tr>
                                         </thead>
@@ -1336,7 +1340,7 @@ $heroGradient = $heroToneMap[$pageTone] ?? $heroToneMap['cyan'];
                                             <?php foreach ($primaryRows as $row): ?>
                                                 <tr class="align-top">
                                                     <?php foreach ($row['cells'] as $cell): ?>
-                                                        <td class="px-4 py-4 text-sm text-slate-700"><?= $cell ?></td>
+                                                        <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-700"><?= $cell ?></td>
                                                     <?php endforeach; ?>
                                                 </tr>
                                             <?php endforeach; ?>

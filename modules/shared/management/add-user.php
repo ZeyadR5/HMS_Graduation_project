@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/bootstrap.php';
 
 $pageTitle = $pageTitle ?? 'Add New User';
@@ -27,6 +27,10 @@ if (isset($_POST['Add'])) {
         $checkStmt->close();
         $connect->close();
         echo "<script>alert('Please fill all fields.');</script>";
+    } elseif (strlen($password) < 8 || !preg_match('/[A-Z]/', $password)) {
+        $checkStmt->close();
+        $connect->close();
+        echo "<script>alert('Password must be at least 8 characters long and contain at least one uppercase letter.');</script>";
     } elseif (!in_array($role, $roleOptions, true)) {
         $checkStmt->close();
         $connect->close();
@@ -66,12 +70,12 @@ if (isset($_POST['Add'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="icon" href="/assets/images/echol.png">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
+<link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <link rel="stylesheet" href="/assets/css/add-button.css">
 </head>
@@ -119,8 +123,23 @@ if (isset($_POST['Add'])) {
                         </div>
                         <div class="sm:col-span-2">
                             <label for="Password" class="block text-sm font-semibold leading-6 text-gray-900">Password</label>
-                            <div class="mt-2.5">
-                                <input type="text" name="Password" id="Password" class="block w-full rounded-md border-2 px-3.5 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                            <div class="mt-2.5 relative">
+                                <input type="password" name="Password" id="Password" style="padding-right: 40px;" class="block w-full rounded-md border-2 px-3.5 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required>
+                                <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 toggle-password-btn" data-target="Password" tabindex="-1">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <!-- Password Requirements Checklist -->
+                            <div class="mt-3 text-xs">
+                                <div class="font-semibold text-gray-700 mb-1">Password requirements / شروط كلمة المرور:</div>
+                                <div class="flex flex-col gap-1.5">
+                                    <div id="req-length" class="flex items-center gap-1.5 text-gray-500 transition-colors duration-200">
+                                        <i class="bi bi-circle" id="icon-length"></i> <span>At least 8 characters / 8 حروف على الأقل</span>
+                                    </div>
+                                    <div id="req-uppercase" class="flex items-center gap-1.5 text-gray-500 transition-colors duration-200">
+                                        <i class="bi bi-circle" id="icon-uppercase"></i> <span>At least 1 uppercase letter / حرف كابيتال واحد على الأقل</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -134,6 +153,71 @@ if (isset($_POST['Add'])) {
             </div>
         </main>
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const passwordInput = document.getElementById('Password');
+        const reqLength = document.getElementById('req-length');
+        const iconLength = document.getElementById('icon-length');
+        const reqUppercase = document.getElementById('req-uppercase');
+        const iconUppercase = document.getElementById('icon-uppercase');
+        const form = document.querySelector('form');
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                const val = passwordInput.value;
+                const isLengthValid = val.length >= 8;
+                const isUppercaseValid = /[A-Z]/.test(val);
+
+                if (isLengthValid) {
+                    reqLength.classList.remove('text-gray-500', 'text-red-500');
+                    reqLength.classList.add('text-green-600');
+                    iconLength.className = 'bi bi-check-circle-fill';
+                } else {
+                    reqLength.classList.remove('text-green-600');
+                    reqLength.classList.add('text-gray-500');
+                    iconLength.className = 'bi bi-circle';
+                }
+
+                if (isUppercaseValid) {
+                    reqUppercase.classList.remove('text-gray-500', 'text-red-500');
+                    reqUppercase.classList.add('text-green-600');
+                    iconUppercase.className = 'bi bi-check-circle-fill';
+                } else {
+                    reqUppercase.classList.remove('text-green-600');
+                    reqUppercase.classList.add('text-gray-500');
+                    iconUppercase.className = 'bi bi-circle';
+                }
+            });
+
+            form.addEventListener('submit', function(e) {
+                const val = passwordInput.value;
+                if (val.length < 8 || !/[A-Z]/.test(val)) {
+                    e.preventDefault();
+                    if (val.length < 8) reqLength.classList.add('text-red-500');
+                    if (!/[A-Z]/.test(val)) reqUppercase.classList.add('text-red-500');
+                    alert('Password does not meet requirements!');
+                }
+            });
+        }
+
+        // Toggle Passwords
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.toggle-password-btn');
+            if (btn) {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const icon = btn.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.replace('bi-eye', 'bi-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.replace('bi-eye-slash', 'bi-eye');
+                }
+            }
+        });
+    });
+    </script>
     <script src="/assets/js/responsive-nav.js" defer></script>
 </body>
 </html>

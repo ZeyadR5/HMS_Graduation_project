@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="<?= $lang ?>" dir="<?= $dir ?>" data-theme="<?= $theme ?>">
 
 <head>
@@ -9,7 +9,8 @@
 
     <link rel="stylesheet" href="/assets/css/responsive.css">
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
 </head>
 
 <body>
@@ -51,8 +52,13 @@
                 <!-- Input Fields -->
                 <div id="input-fields">
                     <!-- Default for Patient -->
-                  <input type="text" name="national_id" placeholder="National ID" required>
-                    <input type="password" name="password" placeholder="Password" required>
+                    <input type="text" name="national_id" placeholder="National ID" required>
+                    <div style="position: relative; width: 100%;">
+                        <input type="password" name="password" id="loginPassword" placeholder="Password" required>
+                        <button type="button" class="toggle-password-btn" data-target="loginPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; padding: 0; z-index: 10;" tabindex="-1">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <a href="#">Forget Your Password?</a>
@@ -78,10 +84,30 @@
                 <!-- Patient Registration -->
                 <input type="text" name="first-name" placeholder="Patient Name" required>
                 <input type="text" name="national_id" placeholder="National ID" required>
-                <input type="password" name="password_r" placeholder="Password" id="passwordInput" class="pass1" required>
-                <div id="passwordStrength"></div>
-                <input type="password" name="password" placeholder="Confirm Password" class="pass2" required>
-                <div id="confirmMessage"></div>
+                <div style="position: relative; width: 100%;">
+                    <input type="password" name="password_r" placeholder="Password" id="passwordInput" class="pass1" required>
+                    <button type="button" class="toggle-password-btn" data-target="passwordInput" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; padding: 0; z-index: 10;" tabindex="-1">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                
+                <div class="password-requirements" style="width: 100%; text-align: left; margin: 4px 0 8px; font-size: 0.72rem; color: #64748b; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; box-sizing: border-box;">
+                    <div style="font-weight: 600; color: #334155; margin-bottom: 2px;">Password requirements / شروط كلمة المرور:</div>
+                    <div id="req-length" style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                        <i class="bi bi-circle" id="icon-length"></i> At least 8 characters / 8 حروف على الأقل
+                    </div>
+                    <div id="req-uppercase" style="display: flex; align-items: center; gap: 6px;">
+                        <i class="bi bi-circle" id="icon-uppercase"></i> At least 1 uppercase letter / حرف كابيتال واحد على الأقل
+                    </div>
+                </div>
+
+                <div style="position: relative; width: 100%;">
+                    <input type="password" name="password" placeholder="Confirm Password" id="confirmPasswordInput" class="pass2" required>
+                    <button type="button" class="toggle-password-btn" data-target="confirmPasswordInput" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; padding: 0; z-index: 10;" tabindex="-1">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div id="confirmMessage" style="width: 100%; text-align: left; font-size: 0.72rem; margin-top: 2px; margin-bottom: 8px;"></div>
 
                 <button name="submit_r">sign up</button>
             </form>
@@ -120,12 +146,22 @@
                 if (role === 'patient') {
                     inputFields.innerHTML = `
                         <input type="text" name="national_id" placeholder="National ID" required>
-                        <input type="password" name="password" placeholder="Password" required>
+                        <div style="position: relative; width: 100%;">
+                            <input type="password" name="password" id="loginPassword" placeholder="Password" required>
+                            <button type="button" class="toggle-password-btn" data-target="loginPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; padding: 0; z-index: 10;" tabindex="-1">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     `;
                 } else {
                     inputFields.innerHTML = `
                         <input type="text" name="username" placeholder="Username" required>
-                        <input type="password" name="password" placeholder="Password" required>
+                        <div style="position: relative; width: 100%;">
+                            <input type="password" name="password" id="loginPassword" placeholder="Password" required>
+                            <button type="button" class="toggle-password-btn" data-target="loginPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; padding: 0; z-index: 10;" tabindex="-1">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     `;
                 }
             });

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../includes/auth.php';
 
 $conn = hms_db_connect();
@@ -23,12 +23,12 @@ $doctorName = $_SESSION['username'] ?? 'Doctor';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Schedule — Echo HMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/l-gh.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
             --sch-primary: #0ea5e9;
@@ -277,6 +277,23 @@ $doctorName = $_SESSION['username'] ?? 'Doctor';
             display: grid; 
             grid-template-columns: 1fr 380px; 
             gap: 1.5rem;
+        }
+
+        /* Performance: prevent CLS by reserving space */
+        #scheduleGrid {
+            min-height: 320px;
+            contain: layout style;
+        }
+        #overridesList {
+            min-height: 60px;
+        }
+        #todayList {
+            min-height: 80px;
+        }
+        /* content-visibility for below-fold sections */
+        .sch-card:not(:first-child) {
+            content-visibility: auto;
+            contain-intrinsic-size: 0 200px;
         }
 
         .sch-override-form {
@@ -661,9 +678,15 @@ $doctorName = $_SESSION['username'] ?? 'Doctor';
         }
 
         // ========== INIT ==========
+        // Use requestIdleCallback for non-critical today's appointments
         loadSchedule();
-        loadToday();
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => loadToday(), { timeout: 2000 });
+        } else {
+            setTimeout(loadToday, 500);
+        }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="/assets/js/responsive-nav.js" defer></script>
 </body>
 </html>

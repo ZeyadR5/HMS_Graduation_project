@@ -11,151 +11,107 @@ loginBtn.addEventListener('click', () => {
 });
 
 // -------------------------------------------------
-
+// Password Visibility Toggle (Delegated)
+// -------------------------------------------------
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.toggle-password-btn');
+    if (btn) {
+        const targetId = btn.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+    }
+});
 
 // -------------------------------------------------
-function checkPasswordStrength() {
-    let password = document.querySelector("#passwordInput").value;
-    let strengthBadge = document.getElementById("passwordStrength");
-    
-    let hasUpperCase = /[A-Z]/.test(password); // يحتوي على حروف كبيرة
-    let hasLowerCase = /[a-z]/.test(password); // يحتوي على حروف صغيرة
-    let hasNumber = /\d/.test(password); // يحتوي على أرقام
-    let hasSymbols = /[!@#$%^&,*_\-,/]/.test(password); // يحتوي على رموز خاصة
+// Sign-up Password Verification
+// -------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const passwordInput = document.getElementById('passwordInput');
+    const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+    const reqLength = document.getElementById('req-length');
+    const iconLength = document.getElementById('icon-length');
+    const reqUppercase = document.getElementById('req-uppercase');
+    const iconUppercase = document.getElementById('icon-uppercase');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const signUpForm = document.querySelector('.sign-up form');
 
-    // تحديث واجهة المستخدم بناءً على قوة كلمة المرور
-    if (password.length === 0) {
-        strengthBadge.innerText = "";
-    } else if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSymbols) {
-        strengthBadge.innerText = "The password must contain at least  :\n one uppercase letter,\n one lowercase letter,\n one number,\n and one spescial character.";
-        strengthBadge.style.color = "red";
-    } else {
-        strengthBadge.innerText = "Strong";
-        strengthBadge.style.color = "green";
-    }
-}
+    if (passwordInput && confirmPasswordInput) {
+        function validatePassword() {
+            const password = passwordInput.value;
+            const hasLength = password.length >= 8;
+            const hasUppercase = /[A-Z]/.test(password);
 
-document.getElementById("passwordInput").addEventListener("input", checkPasswordStrength);
+            // Length Check
+            if (hasLength) {
+                reqLength.style.color = 'green';
+                iconLength.className = 'bi bi-check-circle-fill';
+                iconLength.style.color = 'green';
+            } else {
+                reqLength.style.color = '#64748b';
+                iconLength.className = 'bi bi-circle';
+                iconLength.style.color = '';
+            }
 
-checkPasswordStrength(); // Initial check
+            // Uppercase Check
+            if (hasUppercase) {
+                reqUppercase.style.color = 'green';
+                iconUppercase.className = 'bi bi-check-circle-fill';
+                iconUppercase.style.color = 'green';
+            } else {
+                reqUppercase.style.color = '#64748b';
+                iconUppercase.className = 'bi bi-circle';
+                iconUppercase.style.color = '';
+            }
 
+            // Match Check
+            if (confirmPasswordInput.value) {
+                if (password === confirmPasswordInput.value) {
+                    confirmMessage.innerText = "Passwords match / كلمات المرور متطابقة";
+                    confirmMessage.style.color = "green";
+                } else {
+                    confirmMessage.innerText = "Passwords do not match / كلمات المرور غير متطابقة";
+                    confirmMessage.style.color = "red";
+                }
+            } else {
+                confirmMessage.innerText = "";
+            }
 
-// Get the password field and the element triggering the click
-
-// Function to confirm password match
-function ConfirmPass() {
-    let passwordOne = document.querySelector(".pass1");
-    let passwordTwo = document.querySelector(".pass2");
-    let ConfirmMessage = document.querySelector("#confirmMessage");
-
-    // Add event listener to the second password input field
-    passwordTwo.addEventListener("input", function () {
-        if (passwordOne.value === passwordTwo.value) {
-            ConfirmMessage.innerText = "Passwords match";
-            ConfirmMessage.style.color = "green";
-        } else {
-            ConfirmMessage.innerText = "Passwords Doesn't match";
-            ConfirmMessage.style.color = "red";
+            return hasLength && hasUppercase;
         }
-    });
-}
 
-ConfirmPass();
+        passwordInput.addEventListener('input', validatePassword);
+        confirmPasswordInput.addEventListener('input', validatePassword);
 
+        if (signUpForm) {
+            signUpForm.addEventListener('submit', (e) => {
+                const isValid = validatePassword();
+                const doMatch = passwordInput.value === confirmPasswordInput.value;
 
-// Validate email function
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(String(email).toLowerCase());
-}
-
-
-// Confirm password function
-function confirmPassword() {
-    const pass1 = document.querySelector('.pass1');
-    const pass2 = document.querySelector('.pass2');
-    const message = document.getElementById('confirmMessage');
-    const goodColor = "#66cc66";
-    const badColor = "#ff6666";
-
-    if (pass1.value === pass2.value) {
-        pass2.style.backgroundColor = goodColor;
-        message.style.color = goodColor;
-        message.innerHTML = "Passwords Match!";
-    } else {
-        pass2.style.backgroundColor = badColor;
-        message.style.color = badColor;
-        message.innerHTML = "Passwords Do Not Match!";
-    }
-}
-
-// Event listener for sign up form submission
-document.querySelector('.sign-up form').addEventListener('submit', function (e) {
-    const firstName = document.getElementsByName('text')[0].value;
-    const lastName = document.getElementsByName('text')[1].value;
-    const email = document.getElementsByName('email')[0].value;
-    const password = document.getElementsByName('password')[0].value;
-
-    // Check if data types are strings
-    if (typeof firstName !== 'string' || typeof lastName !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
-        e.preventDefault();
-        alert("Please enter valid data.");
-    }
-
-    // Validate email format
-    if (!validateEmail(email)) {
-        e.preventDefault();
-        alert("Please enter a valid email address.");
-    }
-
-    // Validate password strength
-    const strength = validatePasswordStrength(password);
-    const strengthMessage = document.getElementById('passwordStrength');
-    strengthMessage.innerHTML = "Password Strength: " + strength;
-
-    // Confirm password
-    confirmPassword();
-});
-
-// Event listener for login form submission
-document.querySelector('.sign-in form').addEventListener('submit', function (e) {
-    const email = document.getElementsByName('email')[0].value;
-    const password = document.getElementsByName('password')[0].value;
-
-    // Check if data types are strings
-    if (typeof email !== 'string' || typeof password !== 'string') {
-        e.preventDefault();
-        alert("Please enter valid data.");
-    }
-
-    // Validate email format
-    if (!validateEmail(email)) {
-        e.preventDefault();
-        alert("Please enter a valid email address.");
+                if (!isValid) {
+                    e.preventDefault();
+                    if (passwordInput.value.length < 8) {
+                        reqLength.style.color = 'red';
+                        iconLength.className = 'bi bi-x-circle-fill';
+                        iconLength.style.color = 'red';
+                    }
+                    if (!/[A-Z]/.test(passwordInput.value)) {
+                        reqUppercase.style.color = 'red';
+                        iconUppercase.className = 'bi bi-x-circle-fill';
+                        iconUppercase.style.color = 'red';
+                    }
+                    alert('Password does not meet requirements!');
+                } else if (!doMatch) {
+                    e.preventDefault();
+                    alert('Passwords do not match!');
+                }
+            });
+        }
     }
 });
-
-// Event listener for password confirmation
-document.querySelector('.pass2').addEventListener('keyup', confirmPassword);
-
-/////////////////////////
-
-const passwordInputSignIn = document.getElementById('passwordInputSignIn');
-const togglePassword = document.getElementById('togglePassword');
-
-togglePassword.addEventListener('click', function() {
-    const type = passwordInputSignIn.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordInputSignIn.setAttribute('type', type);
-
-    // تغيير الأيقونة
-    this.classList.toggle('fa-eye');
-    this.classList.toggle('fa-eye-slash');
-});
-
-
-
-
-
-// Show patient info form after sign in
-
-/*1*/

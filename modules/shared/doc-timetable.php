@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../includes/auth.php';
 
 $connect = hms_db_connect();
@@ -145,10 +145,11 @@ function formatTime($timeStr) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doctors Time Table</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <style>
@@ -350,9 +351,11 @@ function formatTime($timeStr) {
                         ?>
                             <div class="doc-card">
                                 <div class="doc-header">
-                                    <div class="doc-avatar"><?= htmlspecialchars($initials) ?></div>
+                                    <div class="rounded-full overflow-hidden border-2 border-white ring-2 ring-indigo-100 shadow-md animate-fade-in" style="width:60px; height:60px; flex-shrink: 0;">
+                                        <img src="<?= hms_get_doctor_avatar($doc['doctorName']) ?>" alt="Dr. <?= htmlspecialchars($doc['doctorName']) ?>" class="w-full h-full object-cover">
+                                    </div>
                                     <div class="doc-info">
-                                        <h3>Dr. <?= htmlspecialchars($doc['doctorName']) ?></h3>
+                                        <h3><?= htmlspecialchars($doc['doctorName']) ?></h3>
                                         <div class="doc-spec"><?= htmlspecialchars($doc['specilization']) ?></div>
                                     </div>
                                 </div>

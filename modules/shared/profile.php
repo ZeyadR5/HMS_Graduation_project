@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 if (!isset($_SESSION['login'])) {
     header('location: /index.php');
@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../includes/config.php';
 $connect = hms_db_connect();
 
 $role = $_SESSION['role'] ?? '';
-$userId = intval($_SESSION['id']);
+$userId = ($role === 'Patient') ? intval($_SESSION['uid'] ?? 0) : intval($_SESSION['id'] ?? 0);
 $msg = "";
 $error = "";
 
@@ -21,11 +21,13 @@ if (isset($_POST['change_password'])) {
 
     if ($new_password !== $confirm_password) {
         $error = "New password and Confirm password do not match.";
-    } elseif (strlen($new_password) < 6) {
-        $error = "New password must be at least 6 characters.";
+    } elseif (strlen($new_password) < 8 || !preg_match('/[A-Z]/', $new_password)) {
+        $error = "New password must be at least 8 characters long and contain at least one uppercase letter.";
     } else {
         if ($role === 'Doctor') {
             $stmt = $connect->prepare("SELECT password FROM doctors WHERE id = ?");
+        } elseif ($role === 'Patient') {
+            $stmt = $connect->prepare("SELECT password FROM users WHERE uid = ?");
         } else {
             // Admin, System Admin, User
             $stmt = $connect->prepare("SELECT password FROM employ WHERE id = ?");
@@ -40,6 +42,8 @@ if (isset($_POST['change_password'])) {
             // Correct current password, update to new
             if ($role === 'Doctor') {
                 $upd = $connect->prepare("UPDATE doctors SET password = ? WHERE id = ?");
+            } elseif ($role === 'Patient') {
+                $upd = $connect->prepare("UPDATE users SET password = ? WHERE uid = ?");
             } else {
                 $upd = $connect->prepare("UPDATE employ SET password = ? WHERE id = ?");
             }
@@ -63,14 +67,15 @@ if (isset($_POST['change_password'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="icon" href="/assets/images/echol.png">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
+<link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <style>
+        input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
         .profile-avatar {
             width: 100px;
             height: 100px;
@@ -107,18 +112,29 @@ if (isset($_POST['change_password'])) {
                     <!-- Profile Card -->
                     <div class="md:col-span-1">
                         <div class="bg-white shadow sm:rounded-xl overflow-hidden text-center profile-header pb-8 pt-10 px-4">
-                            <?php 
-                                $nameParts = explode(' ', $_SESSION['username']);
-                                $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
-                            ?>
                             <div class="flex justify-center mb-4">
-                                <div class="profile-avatar">
-                                    <?= htmlspecialchars($initials) ?>
+                                <div class="rounded-full overflow-hidden border-4 border-white ring-4 ring-indigo-100 shadow-lg flex items-center justify-center bg-gradient-to-tr from-indigo-600 to-sky-500 text-white font-bold" style="width:100px; height:100px;">
+                                    <?php if ($role === 'Doctor'): ?>
+                                        <img src="<?= hms_get_doctor_avatar($_SESSION['username']) ?>" alt="Doctor Avatar" class="w-full h-full object-cover">
+                                    <?php else: ?>
+                                        <?php
+                                        // Generate initials
+                                        $initials = 'HM';
+                                        $nameParts = preg_split('/\s+/', trim($_SESSION['username'] ?? '')) ?: [];
+                                        if (!empty($nameParts)) {
+                                            $initials = strtoupper(substr($nameParts[0], 0, 1));
+                                            if (isset($nameParts[1])) {
+                                                $initials .= strtoupper(substr($nameParts[1], 0, 1));
+                                            }
+                                        }
+                                        ?>
+                                        <span class="text-3xl font-extrabold tracking-wider"><?= htmlspecialchars($initials) ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <h2 class="text-xl font-bold text-gray-900"><?= htmlspecialchars($_SESSION['username']) ?></h2>
-                            <p class="text-sm font-semibold text-indigo-600 mb-1"><?= htmlspecialchars($_SESSION['role']) ?></p>
-                            <p class="text-sm text-gray-500 mb-6"><?= htmlspecialchars($_SESSION['login']) ?></p>
+                            <h2 class="text-xl font-bold text-gray-900"><?= htmlspecialchars($_SESSION['username'] ?? '') ?></h2>
+                            <p class="text-sm font-semibold text-indigo-600 mb-1"><?= htmlspecialchars($_SESSION['role'] ?? '') ?></p>
+                            <p class="text-sm text-gray-500 mb-6"><?= htmlspecialchars($_SESSION['login'] ?? '') ?></p>
 
                             <div class="border-t border-gray-100 pt-6 mt-4">
                                 <div class="flex justify-center gap-4">
@@ -169,11 +185,14 @@ if (isset($_POST['change_password'])) {
                                     </div>
                                 <?php endif; ?>
 
-                                <form class="space-y-6" method="POST" action="">
+                                <form class="space-y-6" method="POST" action="" id="passwordForm">
                                     <div class="grid grid-cols-3 gap-4 items-center">
                                         <label for="current_password" class="block text-sm font-medium text-gray-700 col-span-1 text-right pr-4">Current Password</label>
-                                        <div class="col-span-2">
-                                            <input type="password" name="current_password" id="current_password" required class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2.5">
+                                        <div class="col-span-2 relative">
+                                            <input type="password" name="current_password" id="current_password" required class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2.5 pr-10">
+                                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 toggle-password-btn" data-target="current_password" tabindex="-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -181,16 +200,43 @@ if (isset($_POST['change_password'])) {
 
                                     <div class="grid grid-cols-3 gap-4 items-center">
                                         <label for="new_password" class="block text-sm font-medium text-gray-700 col-span-1 text-right pr-4">New Password</label>
-                                        <div class="col-span-2">
-                                            <input type="password" name="new_password" id="new_password" required class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2.5">
+                                        <div class="col-span-2 relative">
+                                            <input type="password" name="new_password" id="new_password" required class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2.5 pr-10">
+                                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 toggle-password-btn" data-target="new_password" tabindex="-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Password Requirements Checklist -->
+                                    <div class="grid grid-cols-3 gap-4 items-center mt-2">
+                                        <div class="col-span-1"></div>
+                                        <div class="col-span-2 text-xs">
+                                            <div class="font-semibold text-gray-700 mb-1">Password requirements / شروط كلمة المرور:</div>
+                                            <div class="flex flex-col gap-1.5">
+                                                <div id="req-length" class="flex items-center gap-1.5 text-gray-500 transition-colors duration-200">
+                                                    <i class="bi bi-circle" id="icon-length"></i> <span>At least 8 characters / 8 حروف على الأقل</span>
+                                                </div>
+                                                <div id="req-uppercase" class="flex items-center gap-1.5 text-gray-500 transition-colors duration-200">
+                                                    <i class="bi bi-circle" id="icon-uppercase"></i> <span>At least 1 uppercase letter / حرف كابيتال واحد على الأقل</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div class="grid grid-cols-3 gap-4 items-center mt-4">
                                         <label for="confirm_password" class="block text-sm font-medium text-gray-700 col-span-1 text-right pr-4">Confirm Password</label>
-                                        <div class="col-span-2">
-                                            <input type="password" name="confirm_password" id="confirm_password" required class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2.5">
+                                        <div class="col-span-2 relative">
+                                            <input type="password" name="confirm_password" id="confirm_password" required class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2.5 pr-10">
+                                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 toggle-password-btn" data-target="confirm_password" tabindex="-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
                                         </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-3 gap-4 items-center mt-2">
+                                        <div class="col-span-1"></div>
+                                        <div id="matchMessage" class="col-span-2 text-xs font-semibold"></div>
                                     </div>
 
                                     <div class="pt-4 flex justify-end">
@@ -199,6 +245,103 @@ if (isset($_POST['change_password'])) {
                                         </button>
                                     </div>
                                 </form>
+
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    // Toggle Passwords
+                                    const toggleButtons = document.querySelectorAll('.toggle-password-btn');
+                                    toggleButtons.forEach(btn => {
+                                        btn.addEventListener('click', function() {
+                                            const targetId = this.getAttribute('data-target');
+                                            const input = document.getElementById(targetId);
+                                            const icon = this.querySelector('i');
+                                            if (input.type === 'password') {
+                                                input.type = 'text';
+                                                icon.classList.replace('bi-eye', 'bi-eye-slash');
+                                            } else {
+                                                input.type = 'password';
+                                                icon.classList.replace('bi-eye-slash', 'bi-eye');
+                                            }
+                                        });
+                                    });
+
+                                    // Dynamic Requirements
+                                    const newPass = document.getElementById('new_password');
+                                    const confirmPass = document.getElementById('confirm_password');
+                                    const form = document.getElementById('passwordForm');
+
+                                    const reqLength = document.getElementById('req-length');
+                                    const iconLength = document.getElementById('icon-length');
+                                    const reqUppercase = document.getElementById('req-uppercase');
+                                    const iconUppercase = document.getElementById('icon-uppercase');
+                                    const matchMessage = document.getElementById('matchMessage');
+
+                                    function validatePassword() {
+                                        const val = newPass.value;
+                                        const isLengthValid = val.length >= 8;
+                                        const isUppercaseValid = /[A-Z]/.test(val);
+
+                                        // Length Check
+                                        if (isLengthValid) {
+                                            reqLength.classList.remove('text-gray-500', 'text-red-500');
+                                            reqLength.classList.add('text-green-600');
+                                            iconLength.className = 'bi bi-check-circle-fill';
+                                        } else {
+                                            reqLength.classList.remove('text-green-600');
+                                            reqLength.classList.add('text-gray-500');
+                                            iconLength.className = 'bi bi-circle';
+                                        }
+
+                                        // Uppercase Check
+                                        if (isUppercaseValid) {
+                                            reqUppercase.classList.remove('text-gray-500', 'text-red-500');
+                                            reqUppercase.classList.add('text-green-600');
+                                            iconUppercase.className = 'bi bi-check-circle-fill';
+                                        } else {
+                                            reqUppercase.classList.remove('text-green-600');
+                                            reqUppercase.classList.add('text-gray-500');
+                                            iconUppercase.className = 'bi bi-circle';
+                                        }
+
+                                        // Confirm Match
+                                        if (confirmPass.value) {
+                                            if (newPass.value === confirmPass.value) {
+                                                matchMessage.textContent = 'Passwords match / كلمات المرور متطابقة';
+                                                matchMessage.className = 'col-span-2 text-xs font-semibold text-green-600';
+                                            } else {
+                                                matchMessage.textContent = 'Passwords do not match / كلمات المرور غير متطابقة';
+                                                matchMessage.className = 'col-span-2 text-xs font-semibold text-red-500';
+                                            }
+                                        } else {
+                                            matchMessage.textContent = '';
+                                        }
+
+                                        return isLengthValid && isUppercaseValid;
+                                    }
+
+                                    newPass.addEventListener('input', validatePassword);
+                                    confirmPass.addEventListener('input', validatePassword);
+
+                                    form.addEventListener('submit', function(e) {
+                                        const isValid = validatePassword();
+                                        const isMatch = newPass.value === confirmPass.value;
+
+                                        if (!isValid) {
+                                            e.preventDefault();
+                                            if (newPass.value.length < 8) {
+                                                reqLength.classList.add('text-red-500');
+                                            }
+                                            if (!/[A-Z]/.test(newPass.value)) {
+                                                reqUppercase.classList.add('text-red-500');
+                                            }
+                                            alert('Password does not meet requirements!');
+                                        } else if (!isMatch) {
+                                            e.preventDefault();
+                                            alert('Passwords do not match!');
+                                        }
+                                    });
+                                });
+                                </script>
                             </div>
                         </div>
                     </div>

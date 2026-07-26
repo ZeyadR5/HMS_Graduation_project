@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 define('HMS_SKIP_AUTO_CONNECT', true);
 require_once __DIR__ . '/../../includes/config.php';
@@ -16,17 +16,20 @@ if ($connect->connect_error) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About</title>
     <link rel="stylesheet" href="./about.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="icon" href="/hms/assets/images/echol.png">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
+<link rel="icon" href="/hms/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
+    <!-- Prevent CLS: reserve space for images before they load -->
+    <style>
+        section.relative img { display: block; }
+        .aspect-h-1 img, .aspect-w-1 img { width: 100%; height: 100%; object-fit: cover; }
+        /* Reserve image column space to prevent layout shift */
+        .grid.grid-cols-2 > div { min-height: 160px; background: #f1f5f9; }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body>
@@ -49,10 +52,12 @@ if ($connect->connect_error) {
     
 <section class="relative w-full h-[500px]">
 
-  <!-- Ø§Ù„ØµÙˆØ±Ø© -->
+  <!-- Hero image: eager load (above the fold, critical for LCP) -->
   <img src="/hms/assets/images/doctor.jpg"
        class="absolute inset-0 w-full h-full object-cover"
-       alt="Doctor">
+       width="1920" height="500"
+       alt="Doctor"
+       fetchpriority="high">
 
   <!-- Ø·Ø¨Ù‚Ø© ØºØ§Ù…Ù‚Ø© Ø®ÙÙŠÙØ© -->
   <div class="absolute inset-0 bg-black/40"></div>
@@ -252,24 +257,24 @@ We provide reliable and fast medical services to assist patients around the cloc
                           <div class="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                             <div class="h-64 w-44 overflow-hidden rounded-lg sm:opacity-0 lg:opacity-100">
                               <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                                <img src="/hms/assets/images/about-horizontal-img.jpg" class="h-full">
+                               <img src="/hms/assets/images/about-horizontal-img.jpg" class="h-full" loading="lazy" width="176" height="192">
                               </div>
                             </div>
                             <div class="h-64 w-44 overflow-hidden rounded-lg">
                               <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                                <img src="/hms/assets/images/docs.jpeg" class="h-full">
+                               <img src="/hms/assets/images/docs.jpeg" class="h-full" loading="lazy" width="176" height="192">
                               </div>
                             </div>
                           </div>
                           <div class="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                             <div class="h-64 w-44 overflow-hidden rounded-lg">
                               <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                                <img src="/hms/assets/images/dental.jpg" class="h-full">
+                                <img src="/hms/assets/images/dental.jpg" class="h-full" loading="lazy" width="176" height="192">
                               </div>
                             </div>
                             <div class="h-64 w-44 overflow-hidden rounded-lg">
                               <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-44 ">
-                                <img src="/hms/assets/images/dc.jpg" class="h-full">
+                               <img src="/hms/assets/images/dc.jpg" class="h-full" loading="lazy" width="176" height="176">
                               </div>
                             </div>
                             
@@ -277,12 +282,12 @@ We provide reliable and fast medical services to assist patients around the cloc
                           <div class="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                             <div class="h-64 w-44 overflow-hidden rounded-lg">
                               <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                                <img src="/hms/assets/images/dov.jpeg" class="h-full">
+                                <img src="/hms/assets/images/dov.jpeg" class="h-full" loading="lazy" width="176" height="192">
                               </div>
                             </div>
                             <div class="h-64 w-44 overflow-hidden rounded-lg">
                               <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                                <img src="/hms/assets/images/care.jpeg" class="h-full">
+                                <img src="/hms/assets/images/care.jpeg" class="h-full" loading="lazy" width="176" height="192">
                               </div>
                             </div>
                           </div>
@@ -439,22 +444,22 @@ We provide reliable and fast medical services to assist patients around the cloc
               </div>
               <div class="grid grid-cols-2 grid-rows-2 gap-4 sm:gap-6 lg:gap-8 ">
                 <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                  <img src="/hms/assets/images/heartph.jpg" class="w-full h-full">
+                  <img src="/hms/assets/images/heartph.jpg" class="w-full h-full" loading="lazy" width="176" height="192">
                 </div>
                 <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                  <img src="/hms/assets/images/awram.jpg" class="w-full h-full">
+                  <img src="/hms/assets/images/awram.jpg" class="w-full h-full" loading="lazy" width="176" height="192">
                 </div>
                 <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                  <img src="/hms/assets/images/tagmel.jpg" class="w-full h-full">
+                  <img src="/hms/assets/images/tagmel.jpg" class="w-full h-full" loading="lazy" width="176" height="192">
                 </div>
                 <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                  <img src="/hms/assets/images/Eyecare.jpg" class="w-full h-full">
+                  <img src="/hms/assets/images/Eyecare.jpg" class="w-full h-full" loading="lazy" width="176" height="192">
                 </div>
                 <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                  <img src="/hms/assets/images/brain.jpeg" class="w-full h-full">
+                  <img src="/hms/assets/images/brain.jpeg" class="w-full h-full" loading="lazy" width="176" height="192">
                 </div>
                 <div class="aspect-h-1 aspect-w-1 overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-48 ">
-                  <img src="/hms/assets/images/baby.jpg" class="w-full h-full">
+                  <img src="/hms/assets/images/baby.jpg" class="w-full h-full" loading="lazy" width="176" height="192">
                 </div>
               </div>
             </div>
@@ -555,6 +560,7 @@ We provide reliable and fast medical services to assist patients around the cloc
         
       </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="/assets/js/responsive-nav.js" defer></script>
 </body>
 

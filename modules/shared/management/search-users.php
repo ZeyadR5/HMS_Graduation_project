@@ -6,7 +6,7 @@ $connect = hms_management_connect();
 $search = trim($_POST['input'] ?? '');
 $safeSearch = '%' . $search . '%';
 
-$stmt = $connect->prepare("SELECT * FROM employ WHERE username LIKE ? OR CAST(id AS CHAR) LIKE ? ORDER BY employ_statue DESC");
+$stmt = $connect->prepare("SELECT * FROM employ WHERE username LIKE ? OR CAST(id AS CHAR) LIKE ? ORDER BY id DESC");
 $stmt->bind_param("ss", $safeSearch, $safeSearch);
 $stmt->execute();
 $results = $stmt->get_result();
@@ -17,12 +17,12 @@ $results = $stmt->get_result();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Users</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="icon" href="/assets/images/echol.png">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
+<link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
 </head>
 <body>

@@ -111,7 +111,7 @@ if ($action === 'update_status') {
                                                    WHERE doctorId = ? AND appointmentDate = CURRENT_DATE() 
                                                    AND userStatus IN (1,2) AND patient_status = 'waiting'
                                                    AND apid <= ?
-                                                   ORDER BY (priority='urgent') DESC, postingDate ASC");
+                                                   ORDER BY (priority='urgent') DESC, appointmentTime ASC, postingDate ASC");
                     $posStmt->bind_param("ii", $apptRow['doctorId'], $apid);
                     $posStmt->execute();
                     $posRow = $posStmt->get_result()->fetch_assoc();

@@ -22,7 +22,7 @@ function appt_status_badge(array $row): string
         $label = "Cancelled";
     } elseif ($us === 2 && $ds === 2) {
         $bg = "bg-green-50 text-green-700 ring-green-600/20";
-        $label = "Done";
+        $label = "Completed";
     } else {
         $bg = "bg-gray-50 text-gray-600 ring-gray-400/20";
         $label = "Unknown";
@@ -126,6 +126,24 @@ function appt_action_buttons(array $row, string $returnUrl): string
     $csrf = hms_csrf_query();
     $html = '<div class="flex gap-1 justify-center flex-wrap">';
 
+    if (!$isActive) {
+        if ($us === 0 || $ds === 0) {
+            $html .= "<span class='inline-flex items-center rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-400 border border-gray-200 cursor-not-allowed shadow-sm' title='No actions available'>
+                <i class='bi bi-ban me-1.5'></i>Cancelled
+            </span>";
+        } elseif ($us === 2 && $ds === 2) {
+            $html .= "<span class='inline-flex items-center rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-400 border border-gray-200 cursor-not-allowed shadow-sm' title='No actions available'>
+                <i class='bi bi-check2-all me-1.5'></i>Completed
+            </span>";
+        } else {
+            $html .= "<span class='inline-flex items-center rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-400 border border-gray-200 cursor-not-allowed shadow-sm'>
+                <i class='bi bi-dash-circle me-1.5'></i>Closed
+            </span>";
+        }
+        $html .= '</div>';
+        return $html;
+    }
+
     // Check if appointment needs payment (for User/Admin roles)
     $needsPayment = false;
     if ($isActive) {
@@ -179,5 +197,53 @@ function appt_action_buttons(array $row, string $returnUrl): string
 
     $html .= '</div>';
     return $html;
+}
+/**
+ * Detailed booking status badge
+ */
+function get_detailed_status_badge(array $row): string
+{
+    $us = (int)($row['userStatus'] ?? 1);
+    $ds = (int)($row['doctorStatus'] ?? 1);
+    $ps = $row['patient_status'] ?? 'waiting';
+    $lateCount = (int)($row['late_reschedule_count'] ?? 0);
+    
+    // 1. Cancelled
+    if ($us === 0 || $ds === 0) {
+        return "<span class='inline-flex items-center rounded-md bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/20' title='Cancelled / ملغي'>Cancelled <span class='text-[10px] opacity-75 ms-1'>(ملغي)</span></span>";
+    }
+    
+    // 2. Completed
+    if ($ps === 'done' || ($us === 2 && $ds === 2)) {
+        return "<span class='inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-600/20' title='Completed / تم الكشف'>Completed <span class='text-[10px] opacity-75 ms-1'>(تم الكشف)</span></span>";
+    }
+    
+    // Check if past time
+    date_default_timezone_set('Africa/Cairo');
+    $currentDate = date('Y-m-d');
+    $currentTime = date('H:i:s');
+    
+    $apptDate = $row['appointmentDate'];
+    $apptTime = $row['appointmentTime'] ?: '00:00:00';
+    
+    $isPast = false;
+    if ($apptDate < $currentDate) {
+        $isPast = true;
+    } elseif ($apptDate === $currentDate && $apptTime < $currentTime) {
+        $isPast = true;
+    }
+    
+    // 3. No-Show
+    if ($isPast && $ps === 'waiting') {
+        return "<span class='inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20' title='الميعاد عدا والمريض مجاش ومبلغش المستشفى انه هيلغي'>No-Show <span class='text-[10px] opacity-75 ms-1'>(لم يحضر)</span></span>";
+    }
+    
+    // 4. Rescheduled
+    if ($lateCount > 0) {
+        return "<span class='inline-flex items-center rounded-md bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700 ring-1 ring-inset ring-purple-700/10' title='Rescheduled / تأجل'>Rescheduled <span class='text-[10px] opacity-75 ms-1'>(تأجل)</span></span>";
+    }
+    
+    // 5. Pending
+    return "<span class='inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10' title='Pending / لسه ميعاده مجاش'>Pending <span class='text-[10px] opacity-75 ms-1'>(قيد الانتظار)</span></span>";
 }
 ?>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/secure-token.php';
 ini_set("display_errors", 0);
@@ -109,13 +109,13 @@ if (isset($_POST['submit'])) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $isEdit ? 'Edit Report' : 'Write Report' ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
   <link rel="icon" href="../../assets/images/echol.png">
   <link rel="stylesheet" href="/assets/css/responsive.css">
   <link rel="stylesheet" href="/assets/css/generate-button.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
   <div class="min-h-full">
@@ -143,6 +143,55 @@ if (isset($_POST['submit'])) {
 
               $docsql = mysqli_query($connect, "SELECT doctorName FROM doctors WHERE id = '$docid'");
               $docrow = mysqli_fetch_assoc($docsql);
+
+              // Payment check to block unpaid patients from starting checkups
+              $fees = (int)($row['consultancyFees'] ?? 0);
+              $paid = (int)($row['paid'] ?? 0);
+              $depositStatus = $row['deposit_status'] ?? 'none';
+              $depositAmount = (int)($row['deposit_amount'] ?? 0);
+              $discount = (int)($row['discount'] ?? 0);
+              $totalCollected = $paid + $discount + ($depositStatus === 'paid' ? $depositAmount : 0);
+              $isPaid = ($fees <= 0 || $totalCollected >= $fees || $depositStatus === 'paid');
+
+              if (!$isPaid && !$isEdit) {
+                  hms_redirect_with_popup('عذراً، هذا الحجز غير مدفوع بالكامل. يرجى توجيه المريض لمكتب الاستقبال لسداد الرسوم أولاً.', './doc-Reservations.php');
+              }
+
+              // Auto-update patient status to 'in progress' when doctor opens the write report page,
+              // but only if the current status is 'waiting'.
+              if (($row['patient_status'] ?? 'waiting') === 'waiting') {
+                  $updateStatusStmt = $connect->prepare("UPDATE appointment SET patient_status = 'in progress' WHERE apid = ? AND doctorId = ?");
+                  $updateStatusStmt->bind_param("ii", $id, $docid);
+                  if ($updateStatusStmt->execute()) {
+                      $row['patient_status'] = 'in progress'; // Update local row status for page rendering
+                      
+                      // Notify the patient that they are now in the check-up room
+                      if ((int)$row['userId'] > 0) {
+                          $patientUid = (int)$row['userId'];
+                          // Check if patient has a real account
+                          $accStmt = $connect->prepare("SELECT uid FROM users WHERE uid = ? AND email IS NOT NULL AND email != '' AND password IS NOT NULL AND password != ''");
+                          $accStmt->bind_param("i", $patientUid);
+                          $accStmt->execute();
+                          $hasAccount = $accStmt->get_result()->num_rows > 0;
+                          $accStmt->close();
+
+                          if ($hasAccount) {
+                              require_once __DIR__ . '/../../includes/notification-api.php';
+                              $doctorName = $docrow['doctorName'] ?? 'Doctor';
+                              hms_create_notification($connect, [
+                                  'recipient_type' => 'patient',
+                                  'recipient_id' => $patientUid,
+                                  'title' => 'دورك دلوقتي! 🏥',
+                                  'message' => 'اتفضل توجه لعيادة د. ' . $doctorName . ' — دورك جه.',
+                                  'type' => 'queue',
+                                  'related_doctor_id' => $docid,
+                                  'related_appointment_id' => $id,
+                              ]);
+                          }
+                      }
+                  }
+                  $updateStatusStmt->close();
+              }
           ?>
 
           <form method="post" action="./doc-write.php?ref=<?= urlencode(hms_encrypt_id($id)) ?><?= $isEdit ? '&edit=1' : '' ?>" class="mx-auto max-w-full mt-10">
@@ -275,6 +324,7 @@ if (isset($_POST['submit'])) {
   </div>
 
   <script src="/assets/js/responsive-nav.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
   <script>
   const generateBtn = document.getElementById('generateAiNote');
   const summarizeBtn = document.getElementById('summarizeHistory');

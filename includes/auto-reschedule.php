@@ -3,12 +3,54 @@
  * Auto-Reschedule Late Patients
  * 
  * Checks for patients who are 15+ minutes late for their appointment today.
- * If late and still in 'waiting' status, the appointment is automatically
- * rescheduled to the next available working day for the same doctor at the same time.
+ * - If late for the first time: Rescheduled to the next available slot today (at least 1 hour later) without conflicts.
+ * - If no slot is available today, or if they are late a second time for a postponed slot: Rescheduled to the next available day.
  * 
  * This script is designed to be included from pages that refresh regularly
  * (like queue-screen.php or doc-Reservations.php).
  */
+
+if (!function_exists('hms_get_doctor_schedule_for_date')) {
+    function hms_get_doctor_schedule_for_date(mysqli $conn, int $doctorId, string $date, array $dayMap): ?array
+    {
+        // 1. Check for override
+        $ovStmt = $conn->prepare("SELECT status, start_time, end_time, slot_duration FROM doctor_day_overrides WHERE doctor_id = ? AND override_date = ?");
+        $ovStmt->bind_param("is", $doctorId, $date);
+        $ovStmt->execute();
+        $override = $ovStmt->get_result()->fetch_assoc();
+        $ovStmt->close();
+
+        if ($override) {
+            if ($override['status'] === 'off') {
+                return null; // Day is off
+            }
+            return [
+                'start_time' => $override['start_time'],
+                'end_time' => $override['end_time'],
+                'slot_duration' => $override['slot_duration'] ?? 30
+            ];
+        }
+
+        // 2. Check weekly schedule
+        $phpDow = (int)date('w', strtotime($date));
+        $systemDow = $dayMap[$phpDow];
+        $schStmt = $conn->prepare("SELECT start_time, end_time, slot_duration FROM doctor_schedules WHERE doctor_id = ? AND day_of_week = ? AND status = 'available'");
+        $schStmt->bind_param("ii", $doctorId, $systemDow);
+        $schStmt->execute();
+        $schRow = $schStmt->get_result()->fetch_assoc();
+        $schStmt->close();
+
+        if ($schRow) {
+            return [
+                'start_time' => $schRow['start_time'],
+                'end_time' => $schRow['end_time'],
+                'slot_duration' => (int)$schRow['slot_duration']
+            ];
+        }
+
+        return null;
+    }
+}
 
 if (!function_exists('hms_check_late_patients')) {
     function hms_check_late_patients(mysqli $conn): array
@@ -22,7 +64,7 @@ if (!function_exists('hms_check_late_patients')) {
         // Find appointments for today that are still 'waiting' and past their time + 15 min
         $stmt = $conn->prepare("
             SELECT a.apid, a.userId, a.doctorId, a.appointmentTime, a.patient_Name,
-                   a.doctorSpecialization, a.consultancyFees,
+                   a.doctorSpecialization, a.consultancyFees, a.late_reschedule_count,
                    d.doctorName
             FROM appointment a
             JOIN doctors d ON d.id = a.doctorId
@@ -54,77 +96,147 @@ if (!function_exists('hms_check_late_patients')) {
             $doctorId = (int)$appt['doctorId'];
             $apid = (int)$appt['apid'];
             $originalTime = $appt['appointmentTime'];
+            $lateCount = (int)$appt['late_reschedule_count'];
+            $patientName = $appt['patient_Name'];
+            $doctorName = $appt['doctorName'];
 
-            // Normalize time to HH:MM
-            $timeNormalized = date('H:i', strtotime($originalTime));
-
-            // Get doctor's working days
-            $schStmt = $conn->prepare("SELECT day_of_week FROM doctor_schedules WHERE doctor_id = ? AND status = 'available'");
-            $schStmt->bind_param("i", $doctorId);
-            $schStmt->execute();
-            $schRes = $schStmt->get_result();
-            $workingDays = [];
-            while ($schRow = $schRes->fetch_assoc()) {
-                $workingDays[] = (int)$schRow['day_of_week'];
-            }
-            $schStmt->close();
-
-            if (empty($workingDays)) continue; // Doctor has no schedule
-
-            // Search up to 30 days ahead for the next available slot
             $newDate = null;
-            for ($dayOffset = 1; $dayOffset <= 30; $dayOffset++) {
-                $candidateDate = date('Y-m-d', strtotime("+{$dayOffset} days"));
-                $candidatePhpDow = (int)date('w', strtotime($candidateDate));
-                $candidateSystemDow = $dayMap[$candidatePhpDow];
+            $newTime = null;
+            $rescheduledToNextDay = false;
 
-                // Check if this day is a working day
-                if (!in_array($candidateSystemDow, $workingDays)) continue;
+            if ($lateCount == 0) {
+                // First time late: reschedule to the next hour today
+                $todaySchedule = hms_get_doctor_schedule_for_date($conn, $doctorId, $today, $dayMap);
+                if ($todaySchedule !== null) {
+                    $endTimeTs = strtotime($today . ' ' . $todaySchedule['end_time']);
+                    $slotDuration = (int)$todaySchedule['slot_duration'];
+                    $startSearchTs = strtotime($today . ' ' . $originalTime) + 3600; // 1 hour later
+                    $slotSec = $slotDuration * 60;
 
-                // Check for day override (off)
-                $ovStmt = $conn->prepare("SELECT status FROM doctor_day_overrides WHERE doctor_id = ? AND override_date = ?");
-                $ovStmt->bind_param("is", $doctorId, $candidateDate);
-                $ovStmt->execute();
-                $ovRow = $ovStmt->get_result()->fetch_assoc();
-                $ovStmt->close();
+                    $currentTs = $startSearchTs;
+                    while ($currentTs + $slotSec <= $endTimeTs) {
+                        if ($currentTs <= $now) {
+                            // Skip slots that have already passed in real time
+                            $currentTs += $slotSec;
+                            continue;
+                        }
+                        $candidateTimeStr = date('H:i:s', $currentTs);
 
-                if ($ovRow && $ovRow['status'] === 'off') continue; // Day is blocked
+                        // Check if slot is free today
+                        $bookStmt = $conn->prepare("
+                            SELECT COUNT(*) as cnt FROM appointment 
+                            WHERE doctorId = ? AND appointmentDate = ? 
+                            AND appointmentTime = ?
+                            AND userStatus IN (1, 2) AND doctorStatus IN (1, 2)
+                        ");
+                        $bookStmt->bind_param("iss", $doctorId, $today, $candidateTimeStr);
+                        $bookStmt->execute();
+                        $bookRow = $bookStmt->get_result()->fetch_assoc();
+                        $bookStmt->close();
 
-                // Check if the same time slot is available (not already booked)
-                $bookStmt = $conn->prepare("
-                    SELECT COUNT(*) as cnt FROM appointment 
-                    WHERE doctorId = ? AND appointmentDate = ? 
-                    AND appointmentTime = ?
-                    AND userStatus IN (1, 2) AND doctorStatus IN (1, 2)
-                ");
-                $bookStmt->bind_param("iss", $doctorId, $candidateDate, $timeNormalized);
-                $bookStmt->execute();
-                $bookRow = $bookStmt->get_result()->fetch_assoc();
-                $bookStmt->close();
+                        if ((int)$bookRow['cnt'] === 0) {
+                            $newDate = $today;
+                            $newTime = date('H:i:s', $currentTs);
+                            break;
+                        }
+                        $currentTs += $slotSec;
+                    }
+                }
 
-                if ((int)$bookRow['cnt'] === 0) {
-                    // Slot is free! Use this date
-                    $newDate = $candidateDate;
-                    break;
+                // If no available slot is found today, fallback to Case 2 (reschedule to next day)
+                if ($newDate === null) {
+                    $rescheduledToNextDay = true;
+                }
+            } else {
+                // Second time late: reschedule to the next day
+                $rescheduledToNextDay = true;
+            }
+
+            if ($rescheduledToNextDay) {
+                // Search up to 30 days ahead for the next available slot
+                for ($dayOffset = 1; $dayOffset <= 30; $dayOffset++) {
+                    $candidateDate = date('Y-m-d', strtotime("+{$dayOffset} days"));
+                    $candSchedule = hms_get_doctor_schedule_for_date($conn, $doctorId, $candidateDate, $dayMap);
+                    if ($candSchedule === null) continue;
+
+                    // Try to keep the original time if it fits the doctor's shift on that day
+                    $candStartTs = strtotime($candidateDate . ' ' . $candSchedule['start_time']);
+                    $candEndTs = strtotime($candidateDate . ' ' . $candSchedule['end_time']);
+                    $originalTimeTs = strtotime($candidateDate . ' ' . $originalTime);
+                    $targetTimeStr = date('H:i:s', strtotime($originalTime));
+
+                    if ($originalTimeTs >= $candStartTs && $originalTimeTs + ($candSchedule['slot_duration'] * 60) <= $candEndTs) {
+                        // Check if free
+                        $bookStmt = $conn->prepare("
+                            SELECT COUNT(*) as cnt FROM appointment 
+                            WHERE doctorId = ? AND appointmentDate = ? 
+                            AND appointmentTime = ?
+                            AND userStatus IN (1, 2) AND doctorStatus IN (1, 2)
+                        ");
+                        $bookStmt->bind_param("iss", $doctorId, $candidateDate, $targetTimeStr);
+                        $bookStmt->execute();
+                        $bookRow = $bookStmt->get_result()->fetch_assoc();
+                        $bookStmt->close();
+
+                        if ((int)$bookRow['cnt'] === 0) {
+                            $newDate = $candidateDate;
+                            $newTime = $targetTimeStr;
+                            break;
+                        }
+                    }
+
+                    // Otherwise, find the first available slot on that candidate day
+                    $currentTs = $candStartTs;
+                    $slotSec = $candSchedule['slot_duration'] * 60;
+                    $foundSlot = false;
+                    while ($currentTs + $slotSec <= $candEndTs) {
+                        $candidateTimeStr = date('H:i:s', $currentTs);
+
+                        $bookStmt = $conn->prepare("
+                            SELECT COUNT(*) as cnt FROM appointment 
+                            WHERE doctorId = ? AND appointmentDate = ? 
+                            AND appointmentTime = ?
+                            AND userStatus IN (1, 2) AND doctorStatus IN (1, 2)
+                        ");
+                        $bookStmt->bind_param("iss", $doctorId, $candidateDate, $candidateTimeStr);
+                        $bookStmt->execute();
+                        $bookRow = $bookStmt->get_result()->fetch_assoc();
+                        $bookStmt->close();
+
+                        if ((int)$bookRow['cnt'] === 0) {
+                            $newDate = $candidateDate;
+                            $newTime = $candidateTimeStr;
+                            $foundSlot = true;
+                            break;
+                        }
+                        $currentTs += $slotSec;
+                    }
+                    if ($foundSlot) {
+                        break;
+                    }
                 }
             }
 
-            if (!$newDate) continue; // No available date found within 30 days
+            if ($newDate === null || $newTime === null) {
+                continue; // Could not reschedule
+            }
 
-            // Reschedule: update appointment date
-            $updateStmt = $conn->prepare("UPDATE appointment SET appointmentDate = ?, appointmentTime = ? WHERE apid = ?");
-            $updateStmt->bind_param("ssi", $newDate, $timeNormalized, $apid);
+            // Update appointment
+            $nextLateCount = $rescheduledToNextDay ? 0 : ($lateCount + 1);
+            $updateStmt = $conn->prepare("UPDATE appointment SET appointmentDate = ?, appointmentTime = ?, late_reschedule_count = ? WHERE apid = ?");
+            $updateStmt->bind_param("ssii", $newDate, $newTime, $nextLateCount, $apid);
             if ($updateStmt->execute()) {
                 $rescheduled[] = [
                     'apid' => $apid,
-                    'patient' => $appt['patient_Name'],
-                    'doctor' => $appt['doctorName'],
+                    'patient' => $patientName,
+                    'doctor' => $doctorName,
                     'old_date' => $today,
                     'new_date' => $newDate,
-                    'time' => $timeNormalized,
+                    'time' => $newTime,
+                    'rescheduled_to_next_day' => $rescheduledToNextDay
                 ];
 
-                // Notify patient if they have a registered account
+                // Notifications
                 $patientUid = (int)$appt['userId'];
                 if ($patientUid > 0) {
                     $accStmt = $conn->prepare("SELECT uid FROM users WHERE uid = ? AND email IS NOT NULL AND email != '' AND password IS NOT NULL AND password != ''");
@@ -135,11 +247,19 @@ if (!function_exists('hms_check_late_patients')) {
 
                     if ($hasAccount) {
                         require_once __DIR__ . '/notification-api.php';
+                        if ($rescheduledToNextDay) {
+                            $title = 'تأجيل موعدك للغد ⏰';
+                            $message = 'تنبيه: بسبب التأخر للمرة الثانية عن موعدك المؤجل (' . date('h:i A', strtotime($originalTime)) . ')، تم تأجيل حجزك عند د. ' . $doctorName . ' إلى يوم ' . $newDate . ' الساعة (' . date('h:i A', strtotime($newTime)) . ').';
+                        } else {
+                            $title = 'تم تأجيل موعدك ساعة ⏰';
+                            $message = 'تنبيه: بسبب التأخر عن موعدك الأصلي (' . date('h:i A', strtotime($originalTime)) . ')، تم تأجيل حجزك عند د. ' . $doctorName . ' لليوم إلى الساعة (' . date('h:i A', strtotime($newTime)) . ') لضمان عدم إلغاء حجزك.';
+                        }
+
                         hms_create_notification($conn, [
                             'recipient_type' => 'patient',
                             'recipient_id' => $patientUid,
-                            'title' => 'تم تأجيل موعدك ⏰',
-                            'message' => 'بسبب التأخر عن الموعد (' . $originalTime . ') — تم تأجيل حجزك عند د. ' . $appt['doctorName'] . ' لتاريخ ' . $newDate . ' في نفس الوقت.',
+                            'title' => $title,
+                            'message' => $message,
                             'type' => 'reschedule',
                             'related_doctor_id' => $doctorId,
                             'related_appointment_id' => $apid,
@@ -147,13 +267,19 @@ if (!function_exists('hms_check_late_patients')) {
                     }
                 }
 
-                // Notify the doctor
+                // Notify Doctor
                 require_once __DIR__ . '/notification-api.php';
+                if ($rescheduledToNextDay) {
+                    $docMessage = 'المريض ' . $patientName . ' تأخر للمرة الثانية عن موعده المؤجل. تم ترحيل حجزه تلقائياً إلى الغد/اليوم التالي ' . $newDate . ' الساعة (' . date('h:i A', strtotime($newTime)) . ').';
+                } else {
+                    $docMessage = 'المريض ' . $patientName . ' تأخر عن موعده الأصلي. تم تأجيل حجزه تلقائياً لليوم إلى الساعة (' . date('h:i A', strtotime($newTime)) . ').';
+                }
+
                 hms_create_notification($conn, [
                     'recipient_type' => 'doctor',
                     'recipient_id' => $doctorId,
-                    'title' => 'تأجيل تلقائي — ' . $appt['patient_Name'],
-                    'message' => 'المريض ' . $appt['patient_Name'] . ' تأخر أكتر من 15 دقيقة عن موعد ' . $originalTime . '. تم تأجيل الموعد تلقائياً لـ ' . $newDate . '.',
+                    'title' => 'تأجيل حجز — ' . $patientName,
+                    'message' => $docMessage,
                     'type' => 'reschedule',
                     'related_doctor_id' => $doctorId,
                     'related_appointment_id' => $apid,

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../../includes/auth.php';
 
 ini_set('display_errors', '0');
@@ -82,6 +82,7 @@ function hms_fetch_one(mysqli_stmt $stmt): ?array
     return is_array($row) ? $row : null;
 }
 
+$profile_errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['Save'])) {
     hms_require_csrf('/modules/patient/Profile.php');
 
@@ -92,42 +93,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['Save'])) {
     $gender = trim((string)($_POST['Gender'] ?? ''));
     $age = trim((string)($_POST['age'] ?? ''));
 
-    $stmt = $connect->prepare(
-        'UPDATE users
-         SET fullName = ?, PatientContno = ?, nat_id = ?, p_age = ?, email = ?, gender = ?
-         WHERE uid = ?'
-    );
-
-    if ($stmt instanceof mysqli_stmt) {
-        $stmt->bind_param('ssssssi', $fullName, $phone, $nat_id, $age, $email, $gender, $sessionUid);
-        $stmt->execute();
-        $stmt->close();
+    // Validation
+    if (strlen($fullName) < 3) {
+        $profile_errors[] = "Full Name must be at least 3 characters / يجب أن يكون الاسم 3 أحرف على الأقل.";
+    }
+    if (!preg_match('/^[0-9]{11}$/', $phone)) {
+        $profile_errors[] = "Phone number must be exactly 11 digits / يجب أن يكون رقم الهاتف 11 رقماً.";
+    }
+    if (!preg_match('/^\d{1,3}$/', $age) || intval($age) <= 0 || intval($age) > 150) {
+        $profile_errors[] = "Age must be a valid number between 1 and 150 / يجب أن يكون السن بين 1 و 150.";
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $profile_errors[] = "Invalid email format / صيغة البريد الإلكتروني غير صحيحة.";
+    }
+    if ($gender !== 'Male' && $gender !== 'Female') {
+        $profile_errors[] = "Please select a valid gender / يرجى اختيار جنس صحيح.";
     }
 
-    header('Location: /modules/patient/Profile.php?updated=1');
-    exit();
-}
+    if (empty($profile_errors)) {
+        // Check for duplicates
+        $chkDup = $connect->prepare("SELECT nat_id, PatientContno, email FROM users WHERE (nat_id = ? OR (PatientContno = ? AND PatientContno != '') OR (email = ? AND email != '')) AND uid != ?");
+        $chkDup->bind_param("sssi", $nat_id, $phone, $email, $sessionUid);
+        $chkDup->execute();
+        $resDup = $chkDup->get_result();
+        while ($dup = $resDup->fetch_assoc()) {
+            if ($dup['nat_id'] === $nat_id) {
+                $profile_errors[] = "National ID is already registered to another patient / الرقم القومي مسجل لمريض آخر.";
+                break;
+            }
+            if ($phone !== '' && $dup['PatientContno'] === $phone) {
+                $profile_errors[] = "Phone number is already registered to another patient / رقم الهاتف مسجل لمريض آخر.";
+                break;
+            }
+            if ($email !== '' && $dup['email'] === $email) {
+                $profile_errors[] = "Email is already registered to another patient / البريد الإلكتروني مسجل لمريض آخر.";
+                break;
+            }
+        }
+        $chkDup->close();
+    }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ChangePassword'])) {
-    hms_require_csrf('/modules/patient/Profile.php');
+    if (empty($profile_errors)) {
+        $stmt = $connect->prepare(
+            'UPDATE users
+             SET fullName = ?, PatientContno = ?, nat_id = ?, p_age = ?, email = ?, gender = ?
+             WHERE uid = ?'
+        );
 
-    $newPass = $_POST['new_password'] ?? '';
-    $confirmPass = $_POST['confirm_password'] ?? '';
-
-    if ($newPass !== '' && $newPass === $confirmPass && strlen($newPass) >= 6) {
-        $stmt = $connect->prepare('UPDATE users SET password = ? WHERE uid = ?');
         if ($stmt instanceof mysqli_stmt) {
-            $stmt->bind_param('si', $newPass, $sessionUid);
+            $stmt->bind_param('ssssssi', $fullName, $phone, $nat_id, $age, $email, $gender, $sessionUid);
             $stmt->execute();
             $stmt->close();
         }
-        header('Location: /modules/patient/Profile.php?pwd_updated=1');
-        exit();
-    } else {
-        header('Location: /modules/patient/Profile.php?pwd_error=1');
+
+        header('Location: /modules/patient/Profile.php?updated=1');
         exit();
     }
 }
+
 
 $patient = null;
 $userStmt = $connect->prepare('SELECT * FROM users WHERE uid = ? LIMIT 1');
@@ -206,11 +229,12 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Profile</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .hms-copy {
             white-space: pre-wrap;
@@ -272,14 +296,13 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
                 Profile updated successfully.
             </div>
         <?php endif; ?>
-        <?php if ($pwdUpdated): ?>
-            <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                Password changed successfully.
-            </div>
-        <?php endif; ?>
-        <?php if ($pwdError): ?>
+        <?php if (!empty($profile_errors)): ?>
             <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                Failed to change password. Make sure it's at least 6 characters and matches the confirmation.
+                <ul class="list-disc list-inside space-y-1">
+                    <?php foreach ($profile_errors as $err): ?>
+                        <li><?= htmlspecialchars($err) ?></li>
+                    <?php endforeach; ?>
+                </ul>
             </div>
         <?php endif; ?>
 
@@ -303,7 +326,8 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
                         <label for="User-name" class="mb-2 block text-sm font-semibold text-slate-700">Full Name</label>
                         <input
                             id="User-name" name="User-name" type="text"
-                            value="<?= htmlspecialchars($patient['fullName'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                            value="<?= htmlspecialchars($_POST['User-name'] ?? $patient['fullName'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                            required minlength="3"
                             class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                         >
                     </div>
@@ -312,7 +336,8 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
                         <label for="Phone" class="mb-2 block text-sm font-semibold text-slate-700">Phone Number</label>
                         <input
                             id="Phone" name="Phone" type="text"
-                            value="<?= htmlspecialchars((string)($patient['PatientContno'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                            value="<?= htmlspecialchars($_POST['Phone'] ?? (string)($patient['PatientContno'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                            required pattern="[0-9]{11}" maxlength="11" minlength="11" title="Phone number must be exactly 11 digits / يجب أن يكون رقم الهاتف مكوناً من 11 رقماً" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                             class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                         >
                     </div>
@@ -330,7 +355,8 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
                         <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">Email</label>
                         <input
                             id="email" name="email" type="email"
-                            value="<?= htmlspecialchars($patient['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                            value="<?= htmlspecialchars($_POST['email'] ?? $patient['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                            required
                             class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                         >
                     </div>
@@ -339,7 +365,8 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
                         <label for="age" class="mb-2 block text-sm font-semibold text-slate-700">Age</label>
                         <input
                             id="age" name="age" type="text"
-                            value="<?= htmlspecialchars((string)($patient['p_age'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                            value="<?= htmlspecialchars($_POST['age'] ?? (string)($patient['p_age'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                            required pattern="[0-9]{1,3}" maxlength="3" title="Age must be a number between 1 and 150 / يجب أن يكون السن بين 1 و 150" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                             class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                         >
                     </div>
@@ -347,12 +374,12 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
                     <div>
                         <label for="Gender" class="mb-2 block text-sm font-semibold text-slate-700">Gender</label>
                         <select
-                            id="Gender" name="Gender"
+                            id="Gender" name="Gender" required
                             class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                         >
                             <option value="">Select</option>
-                            <option value="Male"   <?= (($patient['gender'] ?? '') === 'Male')   ? 'selected' : '' ?>>Male</option>
-                            <option value="Female" <?= (($patient['gender'] ?? '') === 'Female') ? 'selected' : '' ?>>Female</option>
+                            <option value="Male"   <?= (($_POST['Gender'] ?? $patient['gender'] ?? '') === 'Male')   ? 'selected' : '' ?>>Male</option>
+                            <option value="Female" <?= (($_POST['Gender'] ?? $patient['gender'] ?? '') === 'Female') ? 'selected' : '' ?>>Female</option>
                         </select>
                     </div>
 
@@ -366,47 +393,11 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
                     </div>
                 </form>
 
-                <!-- ═══ Security / Password Card ═══ -->
-                <div class="mt-8 pt-8 border-t border-slate-200">
-                    <div class="mb-6 flex items-center gap-3">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-700">
-                            <i class="bi bi-shield-lock text-xl"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-xl font-bold text-slate-900">Security / Password</h2>
-                            <p class="text-sm text-slate-500">Update your account password to keep it secure.</p>
-                        </div>
-                    </div>
 
-                    <form method="post" class="grid gap-5 md:grid-cols-2">
-                        <?= hms_csrf_field() ?>
-                        <div>
-                            <label for="new_password" class="mb-2 block text-sm font-semibold text-slate-700">New Password</label>
-                            <input
-                                id="new_password" name="new_password" type="password" required minlength="6"
-                                placeholder="At least 6 characters"
-                                class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                            >
-                        </div>
-                        <div>
-                            <label for="confirm_password" class="mb-2 block text-sm font-semibold text-slate-700">Confirm Password</label>
-                            <input
-                                id="confirm_password" name="confirm_password" type="password" required minlength="6"
-                                placeholder="Re-type new password"
-                                class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                            >
-                        </div>
-                        <div class="md:col-span-2 flex justify-end pt-2">
-                            <button
-                                type="submit" name="ChangePassword"
-                                class="inline-flex items-center gap-2 rounded-2xl bg-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-500"
-                            >
-                                <i class="bi bi-key"></i> Update Password
-                            </button>
-                        </div>
-                    </form>
-                </div>
+            </section><!-- end left -->
 
+            <!-- ══ RIGHT: AI Health Summary Card ══ -->
+            <section class="space-y-6">
                 <!-- ═══ AI Health Summary Card ═══ -->
                 <?php if ($lastReport): ?>
                 <div class="ai-card rounded-3xl p-5 shadow-sm">
@@ -453,107 +444,64 @@ $bloodSugar         = hms_text($lastReport['BloodSugar'] ?? '', '-');
                     <p class="text-sm">No medical reports yet.<br>Your AI health summary will appear after your first visit.</p>
                 </div>
                 <?php endif; ?>
-
-            </section><!-- end left -->
-
-            <!-- ══ RIGHT: Quick Summary + Latest Report ══ -->
-            <section class="space-y-6">
-
-                <!-- Quick Summary -->
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div class="mb-4 flex items-center gap-3">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700">
-                            <i class="bi bi-heart-pulse text-xl"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-xl font-bold text-slate-900">Quick Summary</h2>
-                            <p class="text-sm text-slate-500">Your current contact details and latest medical snapshot.</p>
-                        </div>
-                    </div>
-
-                    <dl class="grid gap-4 sm:grid-cols-2">
-                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Patient ID</dt>
-                            <dd class="mt-1 text-lg font-bold text-slate-900"><?= $sessionUid ?></dd>
-                        </div>
-                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Gender</dt>
-                            <dd class="mt-1 text-lg font-bold text-slate-900" dir="auto"><?= htmlspecialchars($patientGender, ENT_QUOTES, 'UTF-8') ?></dd>
-                        </div>
-                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Phone</dt>
-                            <dd class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($patientPhone, ENT_QUOTES, 'UTF-8') ?></dd>
-                        </div>
-                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">National ID</dt>
-                            <dd class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($patientNatId, ENT_QUOTES, 'UTF-8') ?></dd>
-                        </div>
-                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Email</dt>
-                            <dd class="mt-1 text-base font-semibold text-slate-900 hms-copy" dir="auto"><?= htmlspecialchars($patientEmail, ENT_QUOTES, 'UTF-8') ?></dd>
-                        </div>
-                        <div class="rounded-2xl bg-slate-50 px-4 py-3 sm:col-span-2">
-                            <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Age</dt>
-                            <dd class="mt-1 text-lg font-bold text-slate-900"><?= htmlspecialchars($patientAge, ENT_QUOTES, 'UTF-8') ?></dd>
-                        </div>
-                    </dl>
-                </div>
-
-                <!-- Latest Medical Report -->
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div class="mb-4 flex items-center gap-3">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                            <i class="bi bi-clipboard2-pulse text-xl"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-xl font-bold text-slate-900">Latest Medical Report</h2>
-                            <p class="text-sm text-slate-500">Normalized display for the most recent visit and report text.</p>
-                        </div>
-                    </div>
-
-                    <?php if ($lastReport): ?>
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Last Visit</p>
-                                <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($lastVisitDate, ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($lastVisitTime !== '-' ? 'at ' . $lastVisitTime : '', ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Doctor</p>
-                                <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($lastDoctor, ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <div class="rounded-2xl bg-slate-50 px-4 py-3 sm:col-span-2">
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Specialization</p>
-                                <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($lastSpecialization, ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Blood Pressure</p>
-                                <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($bloodPressure, ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <div class="rounded-2xl bg-slate-50 px-4 py-3">
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Blood Sugar</p>
-                                <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($bloodSugar, ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <div class="rounded-2xl border border-slate-200 px-4 py-4 sm:col-span-2">
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Treatment / Prescription</p>
-                                <p class="mt-2 text-sm text-slate-700 hms-copy" dir="auto"><?= htmlspecialchars($latestTreatment, ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <div class="rounded-2xl border border-slate-200 px-4 py-4 sm:col-span-2">
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Report / Description</p>
-                                <p class="mt-2 text-sm text-slate-700 hms-copy" dir="auto"><?= htmlspecialchars($latestReportText, ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <div class="rounded-2xl border border-slate-200 px-4 py-4 sm:col-span-2">
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Scan Notes</p>
-                                <p class="mt-2 text-sm text-slate-700 hms-copy" dir="auto"><?= htmlspecialchars($latestScan, ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                        </div>
-                    <?php else: ?>
-                        <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                            No medical reports have been added yet.
-                        </div>
-                    <?php endif; ?>
-                </div>
-
             </section><!-- end right -->
+
+        </div><!-- end grid -->
+
+        <!-- ═══ Latest Medical Report (Full Width) ═══ -->
+        <div class="mt-8">
+            <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div class="mb-6 flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                        <i class="bi bi-clipboard2-pulse text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Latest Medical Report</h2>
+                        <p class="text-sm text-slate-500">Normalized display for the most recent visit and report text.</p>
+                    </div>
+                </div>
+
+                <?php if ($lastReport): ?>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Last Visit</p>
+                            <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($lastVisitDate, ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($lastVisitTime !== '-' ? 'at ' . $lastVisitTime : '', ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Doctor</p>
+                            <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($lastDoctor, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Blood Pressure</p>
+                            <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($bloodPressure, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                        <div class="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Blood Sugar</p>
+                            <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($bloodSugar, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                        <div class="rounded-2xl bg-slate-50 px-4 py-3 sm:col-span-2 lg:col-span-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Specialization</p>
+                            <p class="mt-1 text-base font-semibold text-slate-900" dir="auto"><?= htmlspecialchars($lastSpecialization, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 px-4 py-4 sm:col-span-2 lg:col-span-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Treatment / Prescription</p>
+                            <p class="mt-2 text-sm text-slate-700 hms-copy" dir="auto"><?= htmlspecialchars($latestTreatment, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 px-4 py-4 sm:col-span-2 lg:col-span-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Report / Description</p>
+                            <p class="mt-2 text-sm text-slate-700 hms-copy" dir="auto"><?= htmlspecialchars($latestReportText, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 px-4 py-4 sm:col-span-2 lg:col-span-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Scan Notes</p>
+                            <p class="mt-2 text-sm text-slate-700 hms-copy" dir="auto"><?= htmlspecialchars($latestScan, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                        No medical reports have been added yet.
+                    </div>
+                <?php endif; ?>
+            </div>
 
         </div><!-- end grid -->
     </main>
@@ -682,26 +630,32 @@ ${(info.doctor || info.date) ? `<p style="font-size:11px;color:#d1d5db;margin:0;
     btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    const lastReportId = '<?php echo $lastReport["ID"] ?? ""; ?>';
-    const cacheKey     = 'ai_health_summary_<?php echo intval($_SESSION["uid"]); ?>';
-    const cached       = sessionStorage.getItem(cacheKey);
+    // Pause the AI pulse animation until user is visible to avoid wasted CPU
+    document.addEventListener('DOMContentLoaded', () => {
+        const lastReportId = '<?php echo $lastReport["ID"] ?? ""; ?>';
+        const cacheKey     = 'ai_health_summary_<?php echo intval($_SESSION["uid"]); ?>';
+        const cached       = sessionStorage.getItem(cacheKey);
 
-    if (cached) {
-        try {
-            const { html, ts, reportId } = JSON.parse(cached);
-            if (reportId === lastReportId && Date.now() - ts < 10 * 60 * 1000) {
-                document.getElementById('ai-loading').classList.add('hidden');
-                const result = document.getElementById('ai-result');
-                result.innerHTML = html;
-                result.classList.remove('hidden');
-                return;
-            }
-        } catch(e) {}
-    }
+        if (cached) {
+            try {
+                const { html, ts, reportId } = JSON.parse(cached);
+                if (reportId === lastReportId && Date.now() - ts < 10 * 60 * 1000) {
+                    document.getElementById('ai-loading').classList.add('hidden');
+                    const result = document.getElementById('ai-result');
+                    result.innerHTML = html;
+                    result.classList.remove('hidden');
+                    return;
+                }
+            } catch(e) {}
+        }
 
-    setTimeout(loadAISummary, 1500);
-});
+        // Use requestIdleCallback to load AI after page is interactive
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => loadAISummary(), { timeout: 3000 });
+        } else {
+            setTimeout(loadAISummary, 2000);
+        }
+    });
 </script>
 <?php endif; ?>
 

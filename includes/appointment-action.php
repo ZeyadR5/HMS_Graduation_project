@@ -1,6 +1,7 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/secure-token.php';
+require_once __DIR__ . '/../includes/mailer.php';
 
 if (!isset($_SESSION['logged_in'])) {
     header("location: /index.php");
@@ -79,9 +80,10 @@ if ($action === 'cancel') {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Cancel Appointment</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
             <script src="https://cdn.tailwindcss.com"></script>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+            <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
             <link rel="icon" href="/assets/images/echol.png">
             <link rel="stylesheet" href="/assets/css/responsive.css">
         </head>
@@ -214,7 +216,8 @@ if ($action === 'cancel') {
                 'message' => "Appointment for $patientName with $doctorName on $date has been cancelled by $cancelledBy.$reasonNote",
                 'type' => 'cancellation',
                 'related_doctor_id' => $doctorId,
-                'related_appointment_id' => $apid
+                'related_appointment_id' => $apid,
+                'mirror_email' => false
             ]);
         }
         $staffStmt->close();
@@ -339,6 +342,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $update->execute();
 
+            // ── Email: Reschedule notification ────────────────────────────
+            if (!empty($appt['userId'])) {
+                $rEmailStmt = $connect->prepare("SELECT email, fullName FROM users WHERE uid = ? AND email IS NOT NULL AND email != '' LIMIT 1");
+                $rEmailStmt->bind_param("i", $appt['userId']);
+                $rEmailStmt->execute();
+                $rEmailRow = $rEmailStmt->get_result()->fetch_assoc();
+                $rEmailStmt->close();
+                if ($rEmailRow && !empty($rEmailRow['email'])) {
+                    $rDoctorStmt = $connect->prepare("SELECT doctorName FROM doctors WHERE id = ? LIMIT 1");
+                    $rDoctorStmt->bind_param("i", $newDocId);
+                    $rDoctorStmt->execute();
+                    $rDoctorRow = $rDoctorStmt->get_result()->fetch_assoc();
+                    $rDoctorStmt->close();
+                    hms_send_appointment_rescheduled_email(
+                        $rEmailRow['email'],
+                        $rEmailRow['fullName'] ?: ($appt['patientFullName'] ?: $appt['patient_Name']),
+                        $rDoctorRow['doctorName'] ?? $appt['doctorName'],
+                        $appt['appointmentDate'],
+                        $appt['appointmentTime'],
+                        $newDate,
+                        $newTime
+                    );
+                }
+            }
+
             hms_redirect_with_popup('Appointment updated successfully.', $return);
         }
     }
@@ -367,9 +395,10 @@ $currentDocId = (int)$appt['doctorId'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Appointment</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
 </head>

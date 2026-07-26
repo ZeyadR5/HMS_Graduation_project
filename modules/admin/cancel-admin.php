@@ -70,7 +70,8 @@ if ($connect->query("UPDATE appointment SET userStatus=0, cancelledBy='Admin' WH
             'message' => "An appointment for $patientName on $date has been cancelled by Admin.",
             'type' => 'cancellation',
             'related_doctor_id' => $doctorId,
-            'related_appointment_id' => $apid
+            'related_appointment_id' => $apid,
+            'mirror_email' => false
         ]);
     }
     $staffStmt->close();

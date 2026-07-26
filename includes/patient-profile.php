@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/secure-token.php';
 
@@ -103,6 +103,92 @@ if (!$patient) {
     exit();
 }
 
+// POST handler for Admin/System Admin editing patient info
+$edit_errors = [];
+$edit_success = false;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_edit_patient'])) {
+    // Only Admin or System Admin can perform this action
+    if ($role === 'Admin' || $role === 'System Admin') {
+        hms_require_csrf('/includes/patient-profile.php');
+
+        $fullName = trim((string)($_POST['fullName'] ?? ''));
+        $phone = trim((string)($_POST['PatientContno'] ?? ''));
+        $nat_id = trim((string)($_POST['nat_id'] ?? ''));
+        $email = trim((string)($_POST['email'] ?? ''));
+        $gender = trim((string)($_POST['gender'] ?? ''));
+        $age = trim((string)($_POST['p_age'] ?? ''));
+
+        // Validation
+        if (strlen($fullName) < 3) {
+            $edit_errors[] = "Full Name must be at least 3 characters / يجب أن يكون الاسم 3 أحرف على الأقل.";
+        }
+        if ($phone !== '' && !preg_match('/^[0-9]{11}$/', $phone)) {
+            $edit_errors[] = "Phone number must be exactly 11 digits / يجب أن يكون رقم الهاتف 11 رقماً.";
+        }
+        if (!preg_match('/^[0-9]{14}$/', $nat_id)) {
+            $edit_errors[] = "National ID must be exactly 14 digits / يجب أن يكون الرقم القومي 14 رقماً.";
+        }
+        if ($age !== '' && (!preg_match('/^\d{1,3}$/', $age) || intval($age) <= 0 || intval($age) > 150)) {
+            $edit_errors[] = "Age must be a valid number between 1 and 150 / يجب أن يكون السن بين 1 و 150.";
+        }
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $edit_errors[] = "Invalid email format / صيغة البريد الإلكتروني غير صحيحة.";
+        }
+        if ($gender !== 'Male' && $gender !== 'Female') {
+            $edit_errors[] = "Please select a valid gender / يرجى اختيار جنس صحيح.";
+        }
+
+        if (empty($edit_errors)) {
+            // Check for duplicates
+            $chkDup = $connect->prepare("SELECT nat_id, PatientContno, email FROM users WHERE (nat_id = ? OR (PatientContno = ? AND PatientContno != '') OR (email = ? AND email != '')) AND uid != ?");
+            $chkDup->bind_param("sssi", $nat_id, $phone, $email, $uid);
+            $chkDup->execute();
+            $resDup = $chkDup->get_result();
+            while ($dup = $resDup->fetch_assoc()) {
+                if ($dup['nat_id'] === $nat_id) {
+                    $edit_errors[] = "National ID is already registered to another patient / الرقم القومي مسجل لمريض آخر.";
+                    break;
+                }
+                if ($phone !== '' && $dup['PatientContno'] === $phone) {
+                    $edit_errors[] = "Phone number is already registered to another patient / رقم الهاتف مسجل لمريض آخر.";
+                    break;
+                }
+                if ($email !== '' && $dup['email'] === $email) {
+                    $edit_errors[] = "Email is already registered to another patient / البريد الإلكتروني مسجل لمريض آخر.";
+                    break;
+                }
+            }
+            $chkDup->close();
+        }
+
+        if (empty($edit_errors)) {
+            $updateStmt = $connect->prepare(
+                'UPDATE users SET fullName = ?, PatientContno = ?, nat_id = ?, p_age = ?, email = ?, gender = ? WHERE uid = ?'
+            );
+            if ($updateStmt instanceof mysqli_stmt) {
+                $updateStmt->bind_param('ssssssi', $fullName, $phone, $nat_id, $age, $email, $gender, $uid);
+                $updateStmt->execute();
+                $updateStmt->close();
+                
+                // Reload patient data
+                $patientSql = mysqli_query($connect, "SELECT * FROM users WHERE uid = '{$uid}'");
+                $patient = $patientSql ? $patientSql->fetch_assoc() : null;
+                $patientName = hms_text($patient['fullName'] ?? '', 'Unknown Patient');
+                $patientGender = hms_text($patient['gender'] ?? '', '—');
+                $patientEmail = hms_text($patient['email'] ?? '', '—');
+                $patientNotes = hms_text($patient['PatientMedhis'] ?? '', '—');
+                
+                $edit_success = true;
+            } else {
+                $edit_errors[] = "Failed to prepare database statement / حدث خطأ أثناء تحديث البيانات.";
+            }
+        }
+    } else {
+        $edit_errors[] = "Unauthorized action / غير مصرح بالقيام بهذا الإجراء.";
+    }
+}
+
 if ($role === 'Doctor') {
     $docid = (int)($_SESSION['id'] ?? 0);
     $accessStmt = $connect->prepare("SELECT apid FROM appointment WHERE userId = ? AND doctorId = ? LIMIT 1");
@@ -115,6 +201,19 @@ if ($role === 'Doctor') {
         header("Location: /includes/med-record.php");
         exit();
     }
+}
+
+$filterDate = $_GET['filter_date'] ?? '';
+$filterSpec = $_GET['filter_spec'] ?? '';
+
+$filterConditions = "";
+if ($filterDate !== '') {
+    $safeDate = mysqli_real_escape_string($connect, $filterDate);
+    $filterConditions .= " AND appointment.appointmentDate = '{$safeDate}'";
+}
+if ($filterSpec !== '') {
+    $safeSpec = mysqli_real_escape_string($connect, $filterSpec);
+    $filterConditions .= " AND appointment.doctorSpecialization = '{$safeSpec}'";
 }
 
 $reportsSql = mysqli_query(
@@ -130,8 +229,25 @@ $reportsSql = mysqli_query(
      JOIN appointment ON appointment.apid = tblmedicalhistory.apid
      LEFT JOIN doctors ON doctors.id = appointment.doctorId
      WHERE tblmedicalhistory.userId = '{$uid}'
+     {$filterConditions}
      ORDER BY appointment.appointmentDate DESC, tblmedicalhistory.ID DESC"
 );
+
+$specsQuery = mysqli_query($connect, "
+    SELECT DISTINCT appointment.doctorSpecialization 
+    FROM tblmedicalhistory
+    JOIN appointment ON appointment.apid = tblmedicalhistory.apid
+    WHERE tblmedicalhistory.userId = '{$uid}' 
+      AND appointment.doctorSpecialization IS NOT NULL 
+      AND appointment.doctorSpecialization != ''
+");
+$specializations = [];
+if ($specsQuery) {
+    while ($sRow = $specsQuery->fetch_assoc()) {
+        $specializations[] = $sRow['doctorSpecialization'];
+    }
+}
+
 
 $docid = (int)($_SESSION['id'] ?? 0);
 $doctorFilter = ($role === 'Doctor') ? "AND appointment.doctorId = '{$docid}'" : '';
@@ -172,6 +288,15 @@ $patientName = hms_text($patient['fullName'] ?? '', 'Unknown Patient');
 $patientGender = hms_text($patient['gender'] ?? '', '—');
 $patientEmail = hms_text($patient['email'] ?? '', '—');
 $patientNotes = hms_text($patient['PatientMedhis'] ?? '', '—');
+
+// Get last checkup specialization and icon
+$lastSpec = '';
+if ($reportsSql && $reportsSql->num_rows > 0) {
+    $firstReport = $reportsSql->fetch_assoc();
+    $lastSpec = $firstReport['doctorSpecialization'] ?? '';
+    $reportsSql->data_seek(0); // Reset pointer for loop
+}
+$specIcon = hms_get_specialization_icon($lastSpec);
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>" dir="<?= $dir ?>" data-theme="<?= $theme ?>">
@@ -179,10 +304,11 @@ $patientNotes = hms_text($patient['PatientMedhis'] ?? '', '—');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Profile - <?= htmlspecialchars($patientName) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <style>
@@ -205,59 +331,127 @@ $patientNotes = hms_text($patient['PatientMedhis'] ?? '', '—');
                 <a href="<?= htmlspecialchars($backUrl) ?>" class="text-sm text-blue-600 hover:underline mb-1 inline-block"><?= htmlspecialchars($backLabel) ?></a>
                 <h1 class="text-3xl font-bold tracking-tight text-gray-900"><?= htmlspecialchars($patientName) ?></h1>
             </div>
+            <?php if ($role === 'Admin' || $role === 'System Admin'): ?>
+            <div>
+                <button type="button" onclick="document.getElementById('editPatientModal').classList.remove('hidden')" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-700 transition-all focus:ring-2 focus:ring-blue-500">
+                    <i class="bi bi-pencil-square"></i> Edit Patient Info
+                </button>
+            </div>
+            <?php endif; ?>
         </div>
     </header>
 
     <main>
         <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        
+        <?php if ($edit_success): ?>
+            <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 flex items-center gap-2">
+                <i class="bi bi-check-circle-fill text-emerald-500"></i> Patient details updated successfully.
+            </div>
+        <?php endif; ?>
 
-            <div class="bg-white rounded-xl shadow ring-1 ring-gray-200 p-6 mb-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                    <p class="text-xs text-gray-500 font-medium uppercase">Patient ID</p>
-                    <p class="text-lg font-bold text-gray-900"><?= (int)$patient['uid'] ?></p>
+            <div class="bg-white rounded-xl shadow ring-1 ring-gray-200 p-6 mb-8 flex flex-col md:flex-row items-stretch gap-6">
+                <!-- Specialization Icon / Avatar representing last checkup -->
+                <div class="flex-shrink-0 flex flex-col items-center justify-center p-4 bg-slate-50 rounded-xl border border-slate-100 min-w-[140px] text-center">
+                    <div class="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center border border-slate-100 overflow-hidden mb-2">
+                        <img src="<?= $specIcon ?>" alt="<?= htmlspecialchars($lastSpec) ?>" class="w-14 h-14 object-contain">
+                    </div>
+                    <span class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">Last Specialty</span>
+                    <span class="text-xs font-bold text-slate-700 block max-w-[120px] truncate" title="<?= htmlspecialchars($lastSpec) ?>">
+                        <?= $lastSpec !== '' ? htmlspecialchars($lastSpec) : 'General' ?>
+                    </span>
                 </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-medium uppercase">Full Name</p>
-                    <p class="text-lg font-bold text-gray-900" dir="auto"><?= htmlspecialchars($patientName) ?></p>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-medium uppercase">Gender</p>
-                    <p class="text-lg font-bold text-gray-900" dir="auto"><?= htmlspecialchars($patientGender) ?></p>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-medium uppercase">Age</p>
-                    <p class="text-lg font-bold text-gray-900"><?= !empty($patient['p_age']) ? (int)$patient['p_age'] : '—' ?></p>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-medium uppercase">Phone</p>
-                    <p class="text-lg font-bold text-gray-900"><?= !empty($patient['PatientContno']) ? htmlspecialchars((string)$patient['PatientContno']) : '—' ?></p>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-medium uppercase">Email</p>
-                    <p class="text-lg font-bold text-gray-900 hms-report-text" dir="auto"><?= htmlspecialchars($patientEmail) ?></p>
-                </div>
-                <?php if ($role === 'Admin' || $role === 'System Admin' || $role === 'User'): ?>
-                <div class="col-span-2 sm:col-span-4 border-t pt-4 mt-2">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                        <div>
-                            <h3 class="text-sm font-bold text-blue-900"><i class="bi bi-shield-lock me-1"></i> Account Recovery / Activation</h3>
-                            <p class="text-xs text-blue-700 mt-1">Generate a secure code for the patient to reset their password or activate a new account with this National ID.</p>
-                            <?php if (!empty($patient['activation_code']) && !empty($patient['activation_expiry']) && strtotime($patient['activation_expiry']) > time()): ?>
-                                <p class="text-xs text-green-700 font-bold mt-2"><i class="bi bi-check-circle"></i> An active code exists (Expires: <?= date('M j, Y h:i A', strtotime($patient['activation_expiry'])) ?>)</p>
-                            <?php endif; ?>
-                        </div>
-                        <div class="flex-shrink-0 text-center">
-                            <button type="button" id="btnGenerateCode" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                Generate Code
-                            </button>
-                            <div id="codeDisplayArea" class="hidden mt-3">
-                                <span class="text-xs text-gray-500 uppercase tracking-widest block mb-1">Activation Code</span>
-                                <span id="theActivationCode" class="font-mono text-2xl font-black text-gray-900 tracking-widest bg-white px-4 py-2 rounded-lg border-2 border-dashed border-gray-300 block select-all"></span>
+
+                <!-- Patient Info Grid -->
+                <div class="flex-grow grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium uppercase">Patient ID</p>
+                        <p class="text-lg font-bold text-gray-900"><?= (int)$patient['uid'] ?></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium uppercase">Full Name</p>
+                        <p class="text-lg font-bold text-gray-900" dir="auto"><?= htmlspecialchars($patientName) ?></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium uppercase">Gender</p>
+                        <p class="text-lg font-bold text-gray-900" dir="auto"><?= htmlspecialchars($patientGender) ?></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium uppercase">Age</p>
+                        <p class="text-lg font-bold text-gray-900"><?= !empty($patient['p_age']) ? (int)$patient['p_age'] : '—' ?></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium uppercase">Phone</p>
+                        <p class="text-lg font-bold text-gray-900"><?= !empty($patient['PatientContno']) ? htmlspecialchars((string)$patient['PatientContno']) : '—' ?></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium uppercase">National ID</p>
+                        <p class="text-lg font-bold text-gray-900"><?= !empty($patient['nat_id']) ? htmlspecialchars((string)$patient['nat_id']) : '—' ?></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium uppercase">Email</p>
+                        <p class="text-lg font-bold text-gray-900 hms-report-text" dir="auto"><?= htmlspecialchars($patientEmail) ?></p>
+                    </div>
+                    <?php if ($role === 'Admin' || $role === 'System Admin' || $role === 'User'): ?>
+                    <div class="col-span-2 sm:col-span-4 border-t pt-4 mt-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                            <div>
+                                <h3 class="text-sm font-bold text-blue-900"><i class="bi bi-shield-lock me-1"></i> Account Recovery / Activation</h3>
+                                <p class="text-xs text-blue-700 mt-1">Generate a secure code for the patient to reset their password or activate a new account with this National ID.</p>
+                                <?php if (!empty($patient['activation_code']) && !empty($patient['activation_expiry']) && strtotime($patient['activation_expiry']) > time()): ?>
+                                    <p class="text-xs text-green-700 font-bold mt-2"><i class="bi bi-check-circle"></i> An active code exists (Expires: <?= date('M j, Y h:i A', strtotime($patient['activation_expiry'])) ?>)</p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="flex-shrink-0 text-center">
+                                <button type="button" id="btnGenerateCode" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    Generate Code
+                                </button>
+                                <div id="codeDisplayArea" class="hidden mt-3">
+                                    <span class="text-xs text-gray-500 uppercase tracking-widest block mb-1">Activation Code</span>
+                                    <span id="theActivationCode" class="font-mono text-2xl font-black text-gray-900 tracking-widest bg-white px-4 py-2 rounded-lg border-2 border-dashed border-gray-300 block select-all"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
-                <?php endif; ?>
+            </div>
+
+            <!-- ═══ Filters Bar ═══ -->
+            <div class="bg-white rounded-xl shadow ring-1 ring-gray-200 p-4 mb-6">
+                <form method="GET" action="" class="row g-3 align-items-end">
+                    <input type="hidden" name="ref" value="<?= htmlspecialchars($_GET['ref'] ?? '') ?>">
+                    
+                    <div class="col-12 col-md-4">
+                        <label for="filter_date" class="form-label text-xs font-semibold text-gray-500 uppercase">Filter by Date</label>
+                        <input type="date" name="filter_date" id="filter_date" value="<?= htmlspecialchars($filterDate) ?>"
+                            class="form-control rounded-lg border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                    </div>
+                    
+                    <div class="col-12 col-md-4">
+                        <label for="filter_spec" class="form-label text-xs font-semibold text-gray-500 uppercase">Filter by Specialization</label>
+                        <select name="filter_spec" id="filter_spec"
+                            class="form-select rounded-lg border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                            <option value="">All Specializations</option>
+                            <?php foreach ($specializations as $spec): ?>
+                                <option value="<?= htmlspecialchars($spec) ?>" <?= $filterSpec === $spec ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($spec) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="col-12 col-md-4 flex gap-2">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition-colors shadow flex items-center justify-center gap-2">
+                            <i class="bi bi-funnel-fill"></i> Filter
+                        </button>
+                        <?php if ($filterDate !== '' || $filterSpec !== ''): ?>
+                            <a href="?ref=<?= urlencode($_GET['ref'] ?? '') ?>" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-lg text-sm transition-colors text-center border border-slate-200 flex items-center justify-center gap-2">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </form>
             </div>
 
             <div class="flex items-center justify-between mb-4">
@@ -372,7 +566,13 @@ $patientNotes = hms_text($patient['PatientMedhis'] ?? '', '—');
             <?php else: ?>
                 <div class="text-center py-16 text-gray-400">
                     <i class="bi bi-clipboard2-x text-5xl block mb-3"></i>
-                    <p class="text-lg">No medical reports found for this patient.</p>
+                    <p class="text-lg">
+                        <?php if ($filterDate !== '' || $filterSpec !== ''): ?>
+                            No medical reports found matching your filters.
+                        <?php else: ?>
+                            No medical reports found for this patient.
+                        <?php endif; ?>
+                    </p>
                     <?php if ($role === 'Doctor' && $pendingCount > 0): ?>
                         <p class="text-sm mt-2">Use the <strong>Add New Report</strong> button above to add the first report.</p>
                     <?php endif; ?>
@@ -464,13 +664,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnGenerate = document.getElementById('btnGenerateCode');
     const displayArea = document.getElementById('codeDisplayArea');
     const codeSpan = document.getElementById('theActivationCode');
-    
     if (btnGenerate) {
-        btnGenerate.addEventListener('click', async () => {
-            if (!confirm("Are you sure you want to generate a new Activation Code? Any existing unused code will be overwritten.")) {
-                return;
-            }
-            
+        const sendGenerateRequest = async (force = false) => {
             btnGenerate.disabled = true;
             btnGenerate.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block"></div> Generating...';
             
@@ -478,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch('/includes/api-generate-activation.php', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ uid: <?= (int)$uid ?> })
+                    body: JSON.stringify({ uid: <?= (int)$uid ?>, force: force })
                 });
                 
                 const data = await res.json();
@@ -486,6 +681,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     codeSpan.textContent = data.code;
                     displayArea.classList.remove('hidden');
                     btnGenerate.classList.add('hidden');
+                } else if (data.status === 'exists') {
+                    if (confirm(data.message)) {
+                        await sendGenerateRequest(true);
+                    } else {
+                        btnGenerate.disabled = false;
+                        btnGenerate.textContent = 'Generate Code';
+                    }
                 } else {
                     alert('Error: ' + data.message);
                     btnGenerate.disabled = false;
@@ -496,10 +698,117 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnGenerate.disabled = false;
                 btnGenerate.textContent = 'Generate Code';
             }
+        };
+
+        btnGenerate.addEventListener('click', async () => {
+            await sendGenerateRequest(false);
         });
     }
 });
 </script>
+<?php endif; ?>
+<?php if ($role === 'Admin' || $role === 'System Admin'): ?>
+<!-- Edit Patient Modal -->
+<div id="editPatientModal" class="<?= empty($edit_errors) ? 'hidden' : '' ?> fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col scale-in-center">
+        <div class="p-6 border-b flex justify-between items-center bg-blue-600">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="bi bi-person-gear"></i> Edit Patient Details
+            </h3>
+            <button type="button" onclick="document.getElementById('editPatientModal').classList.add('hidden')" class="text-blue-100 hover:text-white transition-colors">
+                <i class="bi bi-x-lg text-xl"></i>
+            </button>
+        </div>
+        <form method="POST" action="" class="flex-grow overflow-y-auto p-6 space-y-4">
+            <?= hms_csrf_field() ?>
+            <input type="hidden" name="action_edit_patient" value="1">
+
+            <?php if (!empty($edit_errors)): ?>
+                <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                    <ul class="list-disc list-inside space-y-1">
+                        <?php foreach ($edit_errors as $err): ?>
+                            <li><?= htmlspecialchars($err) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <div>
+                <label for="edit_fullName" class="mb-2 block text-sm font-semibold text-slate-700 font-bold">Full Name</label>
+                <input
+                    id="edit_fullName" name="fullName" type="text"
+                    value="<?= htmlspecialchars($_POST['fullName'] ?? $patient['fullName'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                    required minlength="3"
+                    class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                >
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="edit_gender" class="mb-2 block text-sm font-semibold text-slate-700 font-bold">Gender</label>
+                    <select
+                        id="edit_gender" name="gender" required
+                        class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    >
+                        <option value="Male" <?= (($_POST['gender'] ?? $patient['gender'] ?? '') === 'Male') ? 'selected' : '' ?>>Male</option>
+                        <option value="Female" <?= (($_POST['gender'] ?? $patient['gender'] ?? '') === 'Female') ? 'selected' : '' ?>>Female</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="edit_age" class="mb-2 block text-sm font-semibold text-slate-700 font-bold">Age</label>
+                    <input
+                        id="edit_age" name="p_age" type="text"
+                        value="<?= htmlspecialchars((string)($_POST['p_age'] ?? $patient['p_age'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                        required pattern="[0-9]{1,3}" maxlength="3" title="Age must be a number between 1 and 150" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                        class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    >
+                </div>
+            </div>
+
+            <div>
+                <label for="edit_phone" class="mb-2 block text-sm font-semibold text-slate-700 font-bold">Phone Number</label>
+                <input
+                    id="edit_phone" name="PatientContno" type="text"
+                    value="<?= htmlspecialchars((string)($_POST['PatientContno'] ?? $patient['PatientContno'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                    required pattern="[0-9]{11}" maxlength="11" minlength="11" title="Phone number must be exactly 11 digits" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                    class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                >
+            </div>
+
+            <div>
+                <label for="edit_nat_id" class="mb-2 block text-sm font-semibold text-slate-700 font-bold">National ID</label>
+                <input
+                    id="edit_nat_id" name="nat_id" type="text"
+                    value="<?= htmlspecialchars((string)($_POST['nat_id'] ?? $patient['nat_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                    required pattern="[0-9]{14}" maxlength="14" minlength="14" title="National ID must be exactly 14 digits" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                    class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                >
+            </div>
+
+            <div>
+                <label for="edit_email" class="mb-2 block text-sm font-semibold text-slate-700 font-bold">Email</label>
+                <input
+                    id="edit_email" name="email" type="email"
+                    value="<?= htmlspecialchars($_POST['email'] ?? $patient['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                    required
+                    class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                >
+            </div>
+
+            <div class="pt-4 border-t bg-gray-50 -mx-6 -mb-6 px-6 py-4 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('editPatientModal').classList.add('hidden')"
+                    class="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all">
+                    Cancel
+                </button>
+                <button type="submit"
+                    class="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 <?php endif; ?>
 
 </body>

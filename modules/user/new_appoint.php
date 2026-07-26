@@ -28,6 +28,28 @@ if (isset($_POST['Save'])) {
     $Time           = trim($_POST['Time'] ?? '');
     $about          = trim($_POST['about'] ?? '');
 
+    // Server-side validation
+    $errors = [];
+    if ($name === '') {
+        $errors[] = "Patient Name is required / يجب إدخال اسم المريض.";
+    } elseif (strlen($name) < 3) {
+        $errors[] = "Patient Name must be at least 3 characters / يجب أن يكون اسم المريض 3 أحرف على الأقل.";
+    }
+    if ($phnumber !== '' && !preg_match('/^[0-9]{11}$/', $phnumber)) {
+        $errors[] = "Phone number must be exactly 11 digits / يجب أن يكون رقم الهاتف 11 رقماً.";
+    }
+    if ($natid === '') {
+        $errors[] = "National ID is required / يجب إدخال الرقم القومي.";
+    } elseif (!preg_match('/^[0-9]{14}$/', $natid) && !str_starts_with($natid, 'temp_')) {
+        $errors[] = "National ID must be exactly 14 digits / يجب أن يكون الرقم القومي 14 رقماً.";
+    }
+
+    if (!empty($errors)) {
+        $errStr = implode("\\n", $errors);
+        echo "<script>alert('{$errStr}'); window.history.back();</script>";
+        exit;
+    }
+
     $docstatus      = 1;
     $employid       = intval($_SESSION['id'] ?? 0);
     $employname     = $_SESSION['username'] ?? '';
@@ -233,12 +255,12 @@ if (isset($_POST['Save'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Reservations</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="icon" href="../../assets/images/l-gh.png">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
+<link rel="icon" href="../../assets/images/l-gh.png">
     
     <!-- Flatpickr CSS & JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -470,7 +492,7 @@ if (isset($_POST['Save'])) {
                                 <div class="sm:col-span-6">
                                     <label class="block text-sm font-medium leading-6 text-gray-900">Patient Name</label>
                                     <div class="mt-2">
-                                        <input type="text" name="name" autocomplete="given-name"
+                                        <input type="text" name="name" autocomplete="given-name" required minlength="3"
                                             class="font-bold block w-full rounded-md py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset border-2 ring-gray-500 focus:ring-2 focus:ring-indigo-600 sm:text-sm">
                                     </div>
                                 </div>
@@ -478,7 +500,8 @@ if (isset($_POST['Save'])) {
                                 <div class="sm:col-span-3">
                                     <label class="block text-sm font-medium leading-6 text-gray-900">Phone Number</label>
                                     <div class="mt-2">
-                                        <input type="text" name="phnumber"
+                                        <input type="text" name="phnumber" required
+                                            pattern="[0-9]{11}" maxlength="11" minlength="11" title="Phone number must be exactly 11 digits / يجب أن يكون رقم الهاتف مكوناً من 11 رقماً" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                             class="font-bold block w-full rounded-md border-2 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-500 focus:ring-2 focus:ring-indigo-600 sm:text-sm">
                                     </div>
                                 </div>
@@ -487,6 +510,7 @@ if (isset($_POST['Save'])) {
                                     <label class="block text-sm font-medium leading-6 text-gray-900">National ID</label>
                                     <div class="mt-2">
                                         <input type="text" name="natid" placeholder="رقم الهوية" required
+                                            pattern="[0-9]{14}" maxlength="14" minlength="14" title="National ID must be exactly 14 digits / يجب أن يكون الرقم القومي مكوناً من 14 رقماً" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                             class="font-bold block w-full rounded-md border-2 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-500 focus:ring-2 focus:ring-indigo-600 sm:text-sm">
                                     </div>
                                 </div>
@@ -545,19 +569,8 @@ if (isset($_POST['Save'])) {
 
                             </div>
 
-                            <div class="mt-10 space-y-5">
-                                <fieldset>
-                                    <legend class="text-sm font-semibold leading-6 text-gray-900">Payment Method</legend>
-                                    <div class="mt-2">
-                                        <select name="method"
-                                            class="block w-full rounded-md border-2 px-3.5 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm">
-                                            <option>Cash</option>
-                                            <option>VF Cash</option>
-                                            <option>Visa</option>
-                                        </select>
-                                    </div>
-                                </fieldset>
-                            </div>
+                            <!-- Payment Method hidden — not needed at reception desk -->
+                            <input type="hidden" name="method" value="Cash">
                         </div>
 
                         <!-- Doctor Info Panel -->

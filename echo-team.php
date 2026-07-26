@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 ?>
 <!DOCTYPE html>
@@ -9,7 +9,8 @@ session_start();
     <title>Echo Team - HMS Project Overview</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/echol.png">
     <style>
         body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; color: #0f172a; overflow-x: hidden; }
@@ -405,7 +406,7 @@ session_start();
                   <div class="flip-card-inner">
                     <div class="flip-card-front text-center">
                       <div class="avatar-container mx-auto rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-purple-50" style="width:190px;height:270px;">
-                        <img src="/assets/images/Team/Amnaa.jpeg" alt="Amnaa Mohamed" class="w-full h-full object-contain">
+                        <img src="/assets/images/Team/Amnaa.jpeg?v=2" alt="Amnaa Mohamed" class="w-full h-full object-contain">
                       </div>
                       <div class="mt-4 mb-1 inline-block px-5 py-1.5 rounded-full bg-purple-50 ring-1 ring-purple-200">
                         <h3 class="text-lg font-black text-purple-700">Amnaa Mohamed</h3>
@@ -422,7 +423,7 @@ session_start();
                         </div>
                         <div class="flex flex-col items-center mb-2">
                           <div class="rounded-2xl overflow-hidden border-4 border-purple-100 shadow-md" style="width:130px;height:170px;">
-                            <img src="/assets/images/Team/Amnaa.jpeg" class="w-full h-full object-contain">
+                            <img src="/assets/images/Team/Amnaa.jpeg?v=2" class="w-full h-full object-contain">
                           </div>
                           <h3 class="mt-2 text-sm font-black text-gray-900 uppercase tracking-wide text-center">Amnaa Mohamed</h3>
                           <p class="text-purple-600 font-bold text-xs">Back-End Developer</p>
@@ -430,8 +431,8 @@ session_start();
                         </div>
                         <div class="border-t border-gray-100 pt-2">
                           <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
-                          <a href="https://web.whatsapp.com/send/?phone=%2B20127977721&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
-                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+20127977721
+                          <a href="https://web.whatsapp.com/send/?phone=%2B201127977721&text&type=phone_number&app_absent=0" onclick="event.stopPropagation()" target="_blank" class="back-link">
+                            <div class="back-link-icon bg-green-100"><i class="bi bi-whatsapp text-green-500"></i></div>+201127977721
                           </a>
                           <a href="https://www.linkedin.com/in/amnaa-salah-b3a28936b?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" onclick="event.stopPropagation()" target="_blank" class="back-link">
                             <div class="back-link-icon bg-blue-100"><i class="bi bi-linkedin text-blue-600"></i></div>Amnaa Salah
@@ -605,7 +606,7 @@ session_start();
                         <span class="inline-block px-3 py-1 rounded-full bg-amber-50 ring-1 ring-amber-200 text-amber-700 text-xs font-bold uppercase tracking-widest mb-3">
                             Project Supervisor
                         </span>
-                        <h3 class="text-2xl font-black text-gray-900 mb-1">Dr. Sara</h3>
+                        <h3 class="text-2xl font-black text-gray-900 mb-1">Dr. Sara Ali</h3>
                         <p class="text-amber-600 font-semibold text-sm">Academic Supervisor — HMS Project</p>
                         <p class="text-gray-400 text-xs mt-2 leading-relaxed">Provided academic guidance and oversight throughout the development of the HMS graduation project.</p>
                     </div>

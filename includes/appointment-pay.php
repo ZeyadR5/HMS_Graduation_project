@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Employee Payment Settlement Page
  * =================================
@@ -106,10 +106,11 @@ $depositBadgeText = match ($depositStatus) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settle Payment</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"></noscript>
     <link rel="icon" href="/assets/images/echol.png">
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <style>
@@ -332,11 +333,36 @@ $depositBadgeText = match ($depositStatus) {
         const remainingDisplay = document.getElementById('displayRemaining');
         const currency = '<?= HMS_CURRENCY ?>';
 
-        function updateRemaining() {
-            const pay = parseInt(payInput.value) || 0;
-            const discount = parseInt(discountInput.value) || 0;
+        function updateRemaining(e) {
+            let pay = parseInt(payInput.value) || 0;
+            let discount = parseInt(discountInput.value) || 0;
+            const target = e ? e.target : null;
+
+            if (target === discountInput) {
+                if (discount > initialRemaining) {
+                    discount = initialRemaining;
+                    discountInput.value = discount;
+                }
+                pay = initialRemaining - discount;
+                payInput.value = pay;
+            } else if (target === payInput) {
+                if (pay > initialRemaining) {
+                    pay = initialRemaining;
+                    payInput.value = pay;
+                }
+                if (pay + discount > initialRemaining) {
+                    discount = initialRemaining - pay;
+                    discountInput.value = discount;
+                }
+            } else {
+                // Initial load or generic fallback
+                if (pay + discount > initialRemaining) {
+                    pay = initialRemaining - discount;
+                    payInput.value = pay;
+                }
+            }
+
             const currentRemaining = initialRemaining - pay - discount;
-            
             remainingDisplay.textContent = currentRemaining.toLocaleString() + ' ' + currency;
             
             if (currentRemaining <= 0) {
@@ -346,20 +372,13 @@ $depositBadgeText = match ($depositStatus) {
                 remainingDisplay.classList.remove('green');
                 remainingDisplay.classList.add('red');
             }
-
-            // Prevent going over
-            if (currentRemaining < 0) {
-                if (event && event.target === discountInput) {
-                    discountInput.value = initialRemaining - pay;
-                } else if (event && event.target === payInput) {
-                    payInput.value = initialRemaining - discount;
-                }
-                updateRemaining();
-            }
         }
 
         if (payInput) payInput.addEventListener('input', updateRemaining);
         if (discountInput) discountInput.addEventListener('input', updateRemaining);
+        
+        // Run once on load to ensure sync
+        updateRemaining();
     </script>
     <script src="/assets/js/responsive-nav.js" defer></script>
 </body>
