@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/secure-token.php';
 require_once __DIR__ . '/../includes/mailer.php';

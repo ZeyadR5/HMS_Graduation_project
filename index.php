@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 date_default_timezone_set('Africa/Cairo');
 define('HMS_SKIP_AUTO_CONNECT', true);
 require_once __DIR__ . '/includes/config.php';
@@ -76,7 +76,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'login') {
     $result = $stmt->get_result();
     if ($result->num_rows > 0) {
         $row  = $result->fetch_assoc();
-        if ((int)$row['is_active'] === 0) {
+        if (isset($row['is_active']) && (int)$row['is_active'] === 0) {
             $error = "Your account has been disabled. Please contact the administrator.";
         } else {
             $date = date("Y-m-d");
@@ -108,7 +108,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'login') {
     $result = $stmt->get_result();
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        if ((int)$row['is_active'] === 0) {
+        if (isset($row['is_active']) && (int)$row['is_active'] === 0) {
             $error = "Your account has been disabled. Please contact the administrator.";
         } else {
             session_regenerate_id(true);
@@ -1032,4 +1032,3 @@ if (pass1 && pass2) {
 <script src="/assets/js/responsive-nav.js" defer></script>
 </body>
 </html>
-

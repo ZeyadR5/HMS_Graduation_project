@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../includes/auth.php';
 if (!isset($_SESSION['logged_in']) || !in_array($_SESSION['role'], ['Admin','System Admin'])) {
     header("location: /index.php"); exit();

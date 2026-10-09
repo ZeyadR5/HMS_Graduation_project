@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../includes/auth.php';
 
 $patientName = $_SESSION['username'] ?? 'المريض';

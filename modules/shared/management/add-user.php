@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/bootstrap.php';
 
 $pageTitle = $pageTitle ?? 'Add New User';

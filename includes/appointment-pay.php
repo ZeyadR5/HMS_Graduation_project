@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Employee Payment Settlement Page
  * =================================

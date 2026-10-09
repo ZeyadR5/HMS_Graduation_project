@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/env.php';
+
 /**
  * Payment Configuration
  * =====================
@@ -31,7 +33,7 @@ define('HMS_BASE_URL', 'http://81.10.14.216:8020');
 // ============================================================
 // FAWATERAK CONFIGURATION
 // ============================================================
-define('FAWATERAK_API_KEY', '2ba1958599e34da501d44773d3ce2a347a20ce6eb98a301c53');
+define('FAWATERAK_API_KEY', hms_env('FAWATERAK_API_KEY', ''));
 define('FAWATERAK_FAWRY_ID', '2'); // Standard Fawry ID in Fawaterak
 define('FAWATERAK_WALLET_ID', '3'); // Standard Wallet ID in Fawaterak
 

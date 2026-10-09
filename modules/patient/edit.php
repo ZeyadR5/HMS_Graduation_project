@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../includes/auth.php';
 if (!isset($_SESSION['uid'])) {
     header("location: /index.php"); exit();

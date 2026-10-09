@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../includes/auth.php';
 require_once "../../includes/appointment-helpers.php";
 ini_set("display_errors", 0);

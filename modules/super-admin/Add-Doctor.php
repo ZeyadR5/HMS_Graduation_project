@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../includes/auth.php';
 ini_set("display_errors", 0);
 $conn = hms_db_connect();

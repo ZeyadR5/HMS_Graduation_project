@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 define('HMS_SKIP_AUTO_CONNECT', true);
 require_once __DIR__ . '/../../includes/config.php';

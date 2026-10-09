@@ -3,15 +3,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/notification-api.php';
 ini_set("display_errors", 0);
 
-$servername = "localhost";
-$username   = "root";
-$password   = "";
-$dbname     = "hms";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+$conn = hms_db_connect();
 
 if (isset($_POST['Save'])) {
     hms_require_csrf('/modules/user/new_appoint.php');

@@ -55,17 +55,18 @@
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/zeyadi9/HMS_Graduation_project.git
+   git clone https://github.com/ZeyadR5/HMS_Graduation_project.git
    ```
 
 2. **Database Configuration**:
-   - Ensure your local server (XAMPP/MAMP) is running.
-   - Update your database credentials inside `includes/config.php`.
+   - Run a web server (IIS or Apache) and a MySQL-compatible database server.
+   - This PHP application connects to MySQL/MariaDB with the `mysqli` extension; IIS is the web server, not the database engine.
+   - Copy `.env.example` to `.env` and set your database credentials there.
    *(Note: The database schema is assumed to be pre-configured on your SQL server).*
 
 3. **Configure Environment Variables (AI & Mailer)**:
-   - Provide your **OpenAI API Key** in the respective AI modules (`modules/doctor/doctor-ai-api.php`, `modules/patient/chatbot-api.php`).
-   - Configure your Gmail App Password in `includes/mailer.php` to enable the OTP and Activation email services.
+   - Set `FAWATERAK_API_KEY` to enable Fawaterak payments.
+   - Set `HMS_SMTP_USER` and `HMS_SMTP_PASS` to enable email notifications. Never commit `.env`; it is ignored by Git.
 
 4. **Launch Web Platform**:
    - Place the project in your `htdocs/hms` directory.

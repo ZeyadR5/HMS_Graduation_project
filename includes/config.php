@@ -1,24 +1,37 @@
 <?php
-if (!function_exists('hms_env')) {
-    function hms_env(string $key, ?string $fallback = null): ?string
-    {
-        $value = getenv($key);
-        return ($value === false || $value === '') ? $fallback : $value;
-    }
-}
+require_once __DIR__ . '/env.php';
 
 if (!function_exists('hms_db_connect')) {
     function hms_db_connect(bool $dieOnError = true): ?mysqli
     {
-        $host = hms_env('HMS_DB_HOST', 'localhost');
+        $host = hms_env('HMS_DB_HOST', '127.0.0.1');
         $username = hms_env('HMS_DB_USER', 'root');
         $password = hms_env('HMS_DB_PASS', '');
         $dbname = hms_env('HMS_DB_NAME', 'hms');
+        $port = (int)hms_env('HMS_DB_PORT', '3306');
+        $portsToTry = [$port];
+        if ($port !== 3306) {
+            $portsToTry[] = 3306;
+        }
+        $connection = null;
+        $lastError = '';
 
-        $connection = @new mysqli($host, $username, $password, $dbname);
-        if ($connection->connect_error) {
+        foreach ($portsToTry as $p) {
+            try {
+                $conn = @new mysqli($host, $username, $password, $dbname, $p);
+                if (!$conn->connect_errno) {
+                    $connection = $conn;
+                    break;
+                }
+                $lastError = $conn->connect_error;
+            } catch (Throwable $e) {
+                $lastError = $e->getMessage();
+            }
+        }
+
+        if (!$connection) {
             if ($dieOnError) {
-                die("Connection failed");
+                die("Connection failed: " . htmlspecialchars($lastError));
             }
             return null;
         }
@@ -28,7 +41,7 @@ if (!function_exists('hms_db_connect')) {
     }
 }
 
-$host = hms_env('HMS_DB_HOST', 'localhost');
+$host = hms_env('HMS_DB_HOST', '127.0.0.1');
 $username = hms_env('HMS_DB_USER', 'root');
 $password = hms_env('HMS_DB_PASS', '');
 $dbname = hms_env('HMS_DB_NAME', 'hms');

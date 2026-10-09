@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../includes/auth.php';
 /**
  * search-res.php — صفحة سيرش Reservations موحدة لكل الأدوار

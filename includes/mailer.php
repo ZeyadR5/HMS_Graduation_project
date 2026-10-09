@@ -3,6 +3,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/env.php';
 
 // ── Shared SMTP builder ───────────────────────────────────────────────────────
 function hms_mailer_build(): ?PHPMailer
@@ -10,15 +11,15 @@ function hms_mailer_build(): ?PHPMailer
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
+        $mail->Host       = hms_env('HMS_SMTP_HOST', 'smtp.gmail.com');
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'it4gamma@gmail.com';
-        $mail->Password   = 'ebxs txsx brdk ttqn';
+        $mail->Username   = hms_env('HMS_SMTP_USER', '');
+        $mail->Password   = hms_env('HMS_SMTP_PASS', '');
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
         $mail->CharSet    = 'UTF-8';
         $mail->Timeout    = 5; // 5 seconds connection timeout to prevent hanging on blocked SMTP ports
-        $mail->setFrom('noreply@hms-pro.app', 'Echo HMS');
+        $mail->setFrom(hms_env('HMS_SMTP_FROM', 'noreply@hms-pro.app'), 'Echo HMS');
         return $mail;
     } catch (Exception $e) {
         error_log("HMS Mailer build error: " . $e->getMessage());

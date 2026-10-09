@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="<?= $lang ?>" dir="<?= $dir ?>" data-theme="<?= $theme ?>">
 
 <head>

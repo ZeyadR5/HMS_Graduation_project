@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/notification-api.php';
 require_once __DIR__ . '/../../includes/payment-config.php';
@@ -8,14 +8,7 @@ require_once __DIR__ . '/../../includes/mailer.php';
 ini_set("display_errors", 0);
 
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "hms";
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    die("ÙØ´Ù„ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª: " . $conn->connect_error);
-}
+$conn = hms_db_connect();
 
 
 if (isset($_POST['Save'])) {

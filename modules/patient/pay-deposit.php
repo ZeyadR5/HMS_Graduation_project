@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Patient Deposit Payment Page
  * ============================
